@@ -34,7 +34,7 @@ public class PolarReader {
         byte minSection = buffer.read(BYTE), maxSection = buffer.read(BYTE);
         assertThat(minSection < maxSection, "Invalid section range");
 
-        var chunks = buffer.readCollection(b -> readChunk(b, maxSection - minSection));
+        var chunks = buffer.readCollection(b -> readChunk(b, maxSection - minSection + 1));
 
         return new PolarWorld(major, minor, compression, minSection, maxSection, chunks);
     }
@@ -50,7 +50,7 @@ public class PolarReader {
 
         var blockEntities = buffer.readCollection(PolarReader::readBlockEntity);
 
-        var heightmaps = new byte[32][PolarChunk.HEIGHTMAPS.length];
+        var heightmaps = new byte[PolarChunk.HEIGHTMAP_BYTE_SIZE][PolarChunk.HEIGHTMAPS.length];
         int heightmapMask = buffer.read(INT);
         for (int i = 0; i < PolarChunk.HEIGHTMAPS.length; i++) {
             if ((heightmapMask & PolarChunk.HEIGHTMAPS[i]) == 0)
@@ -71,7 +71,7 @@ public class PolarReader {
         // If section is empty exit immediately
         if (buffer.read(BOOLEAN)) return new PolarSection();
 
-        var blockPalette = buffer.readCollection(b -> b.read(STRING)).toArray(String[]::new);
+        var blockPalette = buffer.readCollection(STRING).toArray(String[]::new);
         int[] blockData = null;
         if (blockPalette.length > 1) {
             blockData = new int[PolarSection.BLOCK_PALETTE_SIZE];
@@ -81,7 +81,7 @@ public class PolarReader {
             unpackPaletteData(blockData, rawBlockData, bitsPerEntry);
         }
 
-        var biomePalette = buffer.readCollection(b -> b.read(STRING)).toArray(String[]::new);
+        var biomePalette = buffer.readCollection(STRING).toArray(String[]::new);
         int[] biomeData = null;
         if (biomePalette.length > 1) {
             biomeData = new int[PolarSection.BIOME_PALETTE_SIZE];
@@ -102,12 +102,13 @@ public class PolarReader {
 
     private static @NotNull PolarChunk.BlockEntity readBlockEntity(@NotNull NetworkBuffer buffer) {
         int posIndex = buffer.read(INT);
+        var id = buffer.read(STRING);
+        var nbt = (NBTCompound) buffer.read(NBT);
         return new PolarChunk.BlockEntity(
                 ChunkUtils.blockIndexToChunkPositionX(posIndex),
                 ChunkUtils.blockIndexToChunkPositionY(posIndex),
                 ChunkUtils.blockIndexToChunkPositionZ(posIndex),
-                buffer.read(STRING),
-                (NBTCompound) buffer.read(NBT)
+                id, nbt
         );
     }
 
@@ -140,6 +141,10 @@ public class PolarReader {
         for (int i = 0; i < out.length; i++) {
             int longIndex = i / intsPerLongCeil;
             int subIndex = i % intsPerLongCeil;
+
+            if (in.length == 0) {
+                System.out.println("ZERO");
+            }
 
             out[i] = (int) ((in[longIndex] >>> (bitsPerEntry * subIndex)) & mask);
         }

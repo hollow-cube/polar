@@ -17,6 +17,10 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 
@@ -26,7 +30,21 @@ public class PolarLoader implements IChunkLoader {
     private static final BiomeManager BIOME_MANAGER = MinecraftServer.getBiomeManager();
     private static final Logger logger = LoggerFactory.getLogger(PolarLoader.class);
 
-    private final PolarWorld worldData = null;
+    private final PolarWorld worldData;
+
+    public PolarLoader(@NotNull Path path) throws IOException {
+        this(Files.newInputStream(path));
+    }
+
+    public PolarLoader(@NotNull InputStream inputStream) throws IOException {
+        try (inputStream) {
+            this.worldData = PolarReader.read(inputStream.readAllBytes());
+        }
+    }
+
+    public PolarLoader(@NotNull PolarWorld world) {
+        this.worldData = world;
+    }
 
     // Loading
 

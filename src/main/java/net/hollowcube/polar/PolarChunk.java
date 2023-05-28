@@ -12,13 +12,13 @@ import java.util.List;
  */
 public class PolarChunk {
 
-    public static final int HEIGHTMAP_NONE = 0x0;
-    public static final int HEIGHTMAP_MOTION_BLOCKING = 0x1;
-    public static final int HEIGHTMAP_MOTION_BLOCKING_NO_LEAVES = 0x2;
-    public static final int HEIGHTMAP_OCEAN_FLOOR = 0x4;
-    public static final int HEIGHTMAP_OCEAN_FLOOR_WG = 0x8;
-    public static final int HEIGHTMAP_WORLD_SURFACE = 0x10;
-    public static final int HEIGHTMAP_WORLD_SURFACE_WG = 0x20;
+    public static final int HEIGHTMAP_NONE = 0b0;
+    public static final int HEIGHTMAP_MOTION_BLOCKING = 0b1;
+    public static final int HEIGHTMAP_MOTION_BLOCKING_NO_LEAVES = 0b10;
+    public static final int HEIGHTMAP_OCEAN_FLOOR = 0b100;
+    public static final int HEIGHTMAP_OCEAN_FLOOR_WG = 0b1000;
+    public static final int HEIGHTMAP_WORLD_SURFACE = 0b10000;
+    public static final int HEIGHTMAP_WORLD_SURFACE_WG = 0b100000;
     static final int[] HEIGHTMAPS = new int[]{
             HEIGHTMAP_NONE,
             HEIGHTMAP_MOTION_BLOCKING,
@@ -28,6 +28,7 @@ public class PolarChunk {
             HEIGHTMAP_WORLD_SURFACE,
             HEIGHTMAP_WORLD_SURFACE_WG,
     };
+    static final int HEIGHTMAP_BYTE_SIZE = 32;
 
     private final int x;
     private final int z;

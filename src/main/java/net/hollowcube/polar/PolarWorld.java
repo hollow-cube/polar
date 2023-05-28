@@ -6,6 +6,7 @@ import net.minestom.server.utils.chunk.ChunkUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -17,14 +18,16 @@ public class PolarWorld {
     public static final byte VERSION_MAJOR = 1;
     public static final byte VERSION_MINOR = 0;
 
+    public static CompressionType DEFAULT_COMPRESSION = CompressionType.ZSTD;
+
     // Polar metadata
     private byte major;
     private byte minor;
     private CompressionType compression;
 
     // World metadata
-    private final int minSection;
-    private final int maxSection;
+    private final byte minSection;
+    private final byte maxSection;
 
     // Chunk data
     private final Long2ObjectMap<PolarChunk> chunks = new Long2ObjectOpenHashMap<>();
@@ -32,7 +35,7 @@ public class PolarWorld {
     public PolarWorld(
             byte major, byte minor,
             @NotNull CompressionType compression,
-            int minSection, int maxSection,
+            byte minSection, byte maxSection,
             @NotNull List<PolarChunk> chunks
     ) {
         this.major = major;
@@ -48,8 +51,24 @@ public class PolarWorld {
         }
     }
 
+    public @NotNull CompressionType compression() {
+        return compression;
+    }
+
+    public byte minSection() {
+        return minSection;
+    }
+
+    public byte maxSection() {
+        return maxSection;
+    }
+
     public @Nullable PolarChunk chunkAt(int x, int z) {
         return chunks.getOrDefault(ChunkUtils.getChunkIndex(x, z), null);
+    }
+
+    public @NotNull Collection<PolarChunk> chunks() {
+        return chunks.values();
     }
 
     public enum CompressionType {

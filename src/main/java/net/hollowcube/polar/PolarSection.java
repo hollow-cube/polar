@@ -13,7 +13,7 @@ import org.jetbrains.annotations.Nullable;
 @ApiStatus.Internal
 public class PolarSection {
     public static final int BLOCK_PALETTE_SIZE = 4096;
-    public static final int BIOME_PALETTE_SIZE = 256;
+    public static final int BIOME_PALETTE_SIZE = 64;
 
     private final boolean empty;
 
