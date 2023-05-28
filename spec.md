@@ -9,10 +9,8 @@ byte - minor version
 byte - compression type (0 = none, 1 = zstd)
 varint - length of the rest of the data
 
-todo include world data here
-- min, max coordinate
-- min section y
-- what else
+byte - min section
+byte - max section
 
 varint - number of chunks
 -- the rest of the data is a series of chunks
@@ -24,6 +22,13 @@ varint - chunk x
 varint - chunk z
 
 -- sections
+varint - number of block entities
+<for each block entity>
+int - chunk pos
+string - block entity id
+varint - length of compound
+byte[] - nbt compound
+</>
 
 int - heightmap bitmask
 32 bytes - for each heightmap present, in order
@@ -38,14 +43,16 @@ bool - is empty (if set, nothing follows)
 -- blocks
 varint - length of palette
 string - for each palette entry
+~~ only if length of palette > 1 ~~
 varint - length of data
-byte[] - data
+long[] - data
 
 -- biomes
 varint - length of palette
 string - for each palette entry
+~~ only if length of palette > 1 ~~
 varint - length of data
-byte[] - data
+long[] - data
 
 bool - has light data (if unset, nothing follows)
 2048 bytes - block light
