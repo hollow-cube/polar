@@ -13,6 +13,7 @@ import static net.minestom.server.network.NetworkBuffer.*;
 
 @SuppressWarnings("UnstableApiUsage")
 public class PolarReader {
+    private PolarReader() {}
 
     public static @NotNull PolarWorld read(byte @NotNull [] data) {
         var buffer = new NetworkBuffer(ByteBuffer.wrap(data));
@@ -21,8 +22,8 @@ public class PolarReader {
         var magicNumber = buffer.read(INT);
         assertThat(magicNumber == PolarWorld.MAGIC_NUMBER, "Invalid magic number");
 
-        byte major = buffer.read(BYTE), minor = buffer.read(BYTE);
-        validateVersion(major, minor);
+        short version = buffer.read(SHORT);
+        validateVersion(version);
 
         var compression = PolarWorld.CompressionType.fromId(buffer.read(BYTE));
         assertThat(compression != null, "Invalid compression type");
@@ -36,7 +37,7 @@ public class PolarReader {
 
         var chunks = buffer.readCollection(b -> readChunk(b, maxSection - minSection + 1));
 
-        return new PolarWorld(major, minor, compression, minSection, maxSection, chunks);
+        return new PolarWorld(version, compression, minSection, maxSection, chunks);
     }
 
     private static @NotNull PolarChunk readChunk(@NotNull NetworkBuffer buffer, int sectionCount) {
@@ -78,7 +79,7 @@ public class PolarReader {
 
             var rawBlockData = buffer.read(LONG_ARRAY);
             var bitsPerEntry = rawBlockData.length * 64 / PolarSection.BLOCK_PALETTE_SIZE;
-            unpackPaletteData(blockData, rawBlockData, bitsPerEntry);
+            PaletteUtil.unpack(blockData, rawBlockData, bitsPerEntry);
         }
 
         var biomePalette = buffer.readCollection(STRING).toArray(String[]::new);
@@ -88,7 +89,7 @@ public class PolarReader {
 
             var rawBiomeData = buffer.read(LONG_ARRAY);
             var bitsPerEntry = rawBiomeData.length * 64 / PolarSection.BIOME_PALETTE_SIZE;
-            unpackPaletteData(biomeData, rawBiomeData, bitsPerEntry);
+            PaletteUtil.unpack(biomeData, rawBiomeData, bitsPerEntry);
         }
 
         byte[] blockLight = null, skyLight = null;
@@ -102,7 +103,7 @@ public class PolarReader {
 
     private static @NotNull PolarChunk.BlockEntity readBlockEntity(@NotNull NetworkBuffer buffer) {
         int posIndex = buffer.read(INT);
-        var id = buffer.read(STRING);
+        var id = buffer.readOptional(STRING);
         var nbt = (NBTCompound) buffer.read(NBT);
         return new PolarChunk.BlockEntity(
                 ChunkUtils.blockIndexToChunkPositionX(posIndex),
@@ -112,13 +113,10 @@ public class PolarReader {
         );
     }
 
-    private static void validateVersion(int major, int minor) {
-        //todo version should just be a single short
-        var invalidVersionError = String.format("Unsupported Polar version. Up to %d.%d is supported, found %d.%d.",
-                PolarWorld.VERSION_MAJOR, PolarWorld.VERSION_MINOR, major, minor);
-        assertThat(major <= PolarWorld.VERSION_MAJOR, invalidVersionError);
-        if (major == PolarWorld.VERSION_MAJOR)
-            assertThat(minor <= PolarWorld.VERSION_MINOR, invalidVersionError);
+    private static void validateVersion(int version) {
+        var invalidVersionError = String.format("Unsupported Polar version. Up to %d is supported, found %d.",
+                PolarWorld.LATEST_VERSION, version);
+        assertThat(version <= PolarWorld.LATEST_VERSION, invalidVersionError);
     }
 
     private static @NotNull NetworkBuffer decompressBuffer(@NotNull NetworkBuffer buffer, @NotNull PolarWorld.CompressionType compression, int length) {
@@ -131,23 +129,6 @@ public class PolarReader {
                 yield newBuffer;
             }
         };
-    }
-
-    private static void unpackPaletteData(int[] out, long[] in, int bitsPerEntry) {
-        var intsPerLong = Math.floor(64d / bitsPerEntry);
-        var intsPerLongCeil = (int) Math.ceil(intsPerLong);
-
-        long mask = (1L << bitsPerEntry) - 1L;
-        for (int i = 0; i < out.length; i++) {
-            int longIndex = i / intsPerLongCeil;
-            int subIndex = i % intsPerLongCeil;
-
-            if (in.length == 0) {
-                System.out.println("ZERO");
-            }
-
-            out[i] = (int) ((in[longIndex] >>> (bitsPerEntry * subIndex)) & mask);
-        }
     }
 
     @Contract("false, _ -> fail")

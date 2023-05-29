@@ -60,8 +60,7 @@ public class AnvilPolar {
         }
 
         return new PolarWorld(
-                PolarWorld.VERSION_MAJOR,
-                PolarWorld.VERSION_MINOR,
+                PolarWorld.LATEST_VERSION,
                 PolarWorld.DEFAULT_COMPRESSION,
                 (byte) minSection, (byte) maxSection,
                 chunks
@@ -84,7 +83,6 @@ public class AnvilPolar {
 
                 var chunkReader = new ChunkReader(chunkData);
 
-                //todo check over section min/max everywhere
                 var yRange = chunkReader.getYRange();
                 if (minSection == Integer.MAX_VALUE) {
                     minSection = yRange.getStart() >> 4;
@@ -119,7 +117,6 @@ public class AnvilPolar {
 
                         blockPalette = new String[]{"minecraft:air"};
                     } else {
-//                        System.out.println("sec " + chunkReader.getChunkX() + " " + sectionReader.getY() + " " + chunkReader.getChunkZ());
                         blockData = sectionReader.getUncompressedBlockStateIDs();
                         blockPalette = new String[blockInfo.getSize()];
                         for (int i = 0; i < blockPalette.length; i++) {
@@ -150,13 +147,16 @@ public class AnvilPolar {
                     int[] biomeData = null;
                     var biomeInfo = sectionReader.getBiomeInformation();
                     if (!biomeInfo.hasBiomeInformation()) {
+                        // No biomes are a warning + replaced with plains only. This happens for older worlds/unmigrated chunks
                         logger.warn("Chunk section {}, {}, {} has no biome information",
                                 chunkReader.getChunkX(), sectionReader.getY(), chunkReader.getChunkZ());
 
                         biomePalette = new String[]{"minecraft:plains"};
                     } else if (biomeInfo.isFilledWithSingleBiome()) {
+                        // Single biome case, handled as null data and a single entry palette
                         biomePalette = new String[]{biomeInfo.getBaseBiome()};
                     } else {
+                        // Full palette case, convert from 64 strings provided by anvil to a normal palette (split data + palette)
                         var palette = new ArrayList<String>();
                         biomeData = new int[PolarSection.BIOME_PALETTE_SIZE];
                         for (int i = 0; i < biomeData.length; i++) {
@@ -172,7 +172,7 @@ public class AnvilPolar {
                         biomePalette = palette.toArray(new String[0]);
                     }
 
-
+                    // Lighting data, if present
                     byte[] blockLight = null, skyLight = null;
                     if (sectionReader.getBlockLight() != null && sectionReader.getSkyLight() != null) {
                         blockLight = sectionReader.getBlockLight().copyArray();

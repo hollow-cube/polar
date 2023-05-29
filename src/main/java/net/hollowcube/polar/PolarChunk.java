@@ -73,7 +73,7 @@ public class PolarChunk {
             int x,
             int y,
             int z,
-            @NotNull String id,
+            @Nullable String id,
             @NotNull NBTCompound data
     ) {
 

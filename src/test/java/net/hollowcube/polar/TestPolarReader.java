@@ -20,9 +20,9 @@ class TestPolarReader {
         var e = assertThrows(PolarReader.Error.class, () -> {
             PolarReader.read(new byte[]{
                     0x50, 0x6F, 0x6C, 0x72, // magic number
-                    Byte.MAX_VALUE, 0x0, // version
+                    0x50, 0x50, // version
             });
         });
-        assertEquals("Unsupported Polar version. Up to 1.0 is supported, found 127.0.", e.getMessage());
+        assertEquals("Unsupported Polar version. Up to 1 is supported, found 20560.", e.getMessage());
     }
 }

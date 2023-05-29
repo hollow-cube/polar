@@ -4,63 +4,62 @@ The polar format resembles the anvil format in many ways, though it is binary, n
 
 ### Header
 
-```
-int - magic number
-byte - major version
-byte - minor version
-byte - compression type (0 = none, 1 = zstd)
-varint - length of the rest of the data (uncompressed)
+| Name           | Type   | Notes                                                                   |
+|----------------|--------|-------------------------------------------------------------------------|
+| Magic Number   | int    | `Polr`                                                                  |
+| Major Version  | byte   |                                                                         |
+| Minor Version  | byte   |                                                                         |
+| Compression    | byte   | 0 = None, 1 = Zstd                                                      |
+| Length of data | varint | Uncompressed length of data (or just length of data if `Compression=0`) |
+| World          | world  |                                                                         |
 
-byte - min section
-byte - max section
+### World
 
-varint - number of chunks
--- the rest of the data is a series of chunks
-```
+| Name             | Type         | Notes                                    |
+|------------------|--------------|------------------------------------------|
+| Min Section      | byte         | For example, -4 in a vanilla world       |
+| Max Section      | byte         | For example, 19 in a vanilla world       |
+| Number of Chunks | varint       | Number of entries in the following array |
+| Chunks           | array[chunk] | Chunk data                               |
 
 ### Chunk
 
-```
-varint - chunk x
-varint - chunk z
+Entities or some other extra data field needs to be added to chunks in the future.
 
--- sections
-varint - number of block entities
-<for each block entity>
-int - chunk pos
-string - block entity id
-varint - length of compound
-byte[] - nbt compound
-</>
-
-int - heightmap bitmask
-32 bytes - for each heightmap present, in order
-
-todo entities
-```
-
-todo need to support block entities without ids (minestom does)
+| Name                     | Type                | Notes                                                                                |
+|--------------------------|---------------------|--------------------------------------------------------------------------------------|
+| Chunk X                  | varint              |                                                                                      |
+| Chunk Z                  | varint              |                                                                                      |
+| Sections                 | array[section]      | `maxSection-minSection+1` entries                                                    |
+| Number of Block Entities | varint              | Number of entries in the following array                                             |
+| Block Entities           | array[block entity] |                                                                                      |
+| Heightmap Mask           | int                 | A mask indicating which heightmaps are present. See `AnvilChunk` for flag constants. |
+| Heightmaps               | array[bytes]        | One heightmap for each bit present in Heightmap Mask                                 |
 
 ### Sections
 
-```
-bool - is empty (if set, nothing follows)
+| Name                      | Type          | Notes                                                             |
+|---------------------------|---------------|-------------------------------------------------------------------|
+| Is Empty                  | bool          | If set, nothing follows                                           |
+| Block Palette Size        | varint        |                                                                   |
+| Block Palette             | array[string] | Entries are in the form `minecraft:block[key1=value1,key2=value2] |
+| Block Palette Data Length | varint        | Only present if `Block Palette Size > 1`                          |
+| Block Palette Data        | array[long]   | See the anvil format for more information about this type         |
+| Biome Palette Size        | varint        |                                                                   |
+| Biome Palette             | array[string] |                                                                   |
+| Biome Palette Data Length | varint        | Only present if `Biome Palette Size > 1`                          |
+| Biome Palette Data        | array[long]   | See the anvil format for more information about this type         |
+| Has Light Data            | bool          | If unset, block and sky light are both ommitted                   |
+| Block Light               | bytes         | A 2048 byte long nibble array                                     |
+| Sky Light                 | bytes         | A 2048 byte long nibble array                                     |
 
--- blocks
-varint - length of palette
-string - for each palette entry
-~~ only if length of palette > 1 ~~
-varint - length of data
-long[] - data
+### Block Entity
 
--- biomes
-varint - length of palette
-string - for each palette entry
-~~ only if length of palette > 1 ~~
-varint - length of data
-long[] - data
+| Name            | Type   | Notes                                     |
+|-----------------|--------|-------------------------------------------|
+| Chunk Pos       | int    |                                           |
+| Has ID          | bool   | If unset, Block Entity ID is omitted      |
+| Block Entity ID | string | Will be made optional in a future version |
+| NBT Data        | nbt    |                                           |
 
-bool - has light data (if unset, nothing follows)
-2048 bytes - block light
-2048 bytes - sky light
-```
+todo need to support block entities without ids (minestom does)
