@@ -15,14 +15,12 @@ import java.util.List;
 @SuppressWarnings("UnstableApiUsage")
 public class PolarWorld {
     public static final int MAGIC_NUMBER = 0x506F6C72;
-    public static final byte VERSION_MAJOR = 1;
-    public static final byte VERSION_MINOR = 0;
+    public static final short LATEST_VERSION = 1;
 
     public static CompressionType DEFAULT_COMPRESSION = CompressionType.ZSTD;
 
     // Polar metadata
-    private byte major;
-    private byte minor;
+    private short version;
     private CompressionType compression;
 
     // World metadata
@@ -33,13 +31,12 @@ public class PolarWorld {
     private final Long2ObjectMap<PolarChunk> chunks = new Long2ObjectOpenHashMap<>();
 
     public PolarWorld(
-            byte major, byte minor,
+            short version,
             @NotNull CompressionType compression,
             byte minSection, byte maxSection,
             @NotNull List<PolarChunk> chunks
     ) {
-        this.major = major;
-        this.minor = minor;
+        this.version = version;
         this.compression = compression;
 
         this.minSection = minSection;
@@ -49,6 +46,10 @@ public class PolarWorld {
             var index = ChunkUtils.getChunkIndex(chunk.x(), chunk.z());
             this.chunks.put(index, chunk);
         }
+    }
+
+    public short version() {
+        return version;
     }
 
     public @NotNull CompressionType compression() {
@@ -65,6 +66,9 @@ public class PolarWorld {
 
     public @Nullable PolarChunk chunkAt(int x, int z) {
         return chunks.getOrDefault(ChunkUtils.getChunkIndex(x, z), null);
+    }
+    public void updateChunkAt(int x, int z, @NotNull PolarChunk chunk) {
+        chunks.put(ChunkUtils.getChunkIndex(x, z), chunk);
     }
 
     public @NotNull Collection<PolarChunk> chunks() {

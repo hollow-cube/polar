@@ -11,6 +11,7 @@ import static net.minestom.server.network.NetworkBuffer.*;
 
 @SuppressWarnings("UnstableApiUsage")
 public class PolarWriter {
+    private PolarWriter() {}
 
     public static byte[] write(@NotNull PolarWorld world) {
         // Write the compressed content first
@@ -22,8 +23,7 @@ public class PolarWriter {
         // Create final buffer
         return NetworkBuffer.makeArray(buffer -> {
             buffer.write(INT, PolarWorld.MAGIC_NUMBER);
-            buffer.write(BYTE, PolarWorld.VERSION_MAJOR);
-            buffer.write(BYTE, PolarWorld.VERSION_MINOR);
+            buffer.write(SHORT, PolarWorld.LATEST_VERSION);
             buffer.write(BYTE, (byte) world.compression().ordinal());
             switch (world.compression()) {
                 case NONE -> {
@@ -62,7 +62,7 @@ public class PolarWriter {
             var blockData = section.blockData();
             var bitsPerEntry = (int) Math.ceil(Math.log(blockPalette.length) / Math.log(2));
             if (bitsPerEntry < 1) bitsPerEntry = 1;
-            buffer.write(LONG_ARRAY, pack(blockData, bitsPerEntry));
+            buffer.write(LONG_ARRAY, PaletteUtil.pack(blockData, bitsPerEntry));
         }
 
         // Biomes
@@ -72,7 +72,7 @@ public class PolarWriter {
             var biomeData = section.biomeData();
             var bitsPerEntry = (int) Math.ceil(Math.log(biomePalette.length) / Math.log(2));
             if (bitsPerEntry < 1) bitsPerEntry = 1;
-            buffer.write(LONG_ARRAY, pack(biomeData, bitsPerEntry));
+            buffer.write(LONG_ARRAY, PaletteUtil.pack(biomeData, bitsPerEntry));
         }
 
         // Light
@@ -86,25 +86,7 @@ public class PolarWriter {
     private static void writeBlockEntity(@NotNull NetworkBuffer buffer, @NotNull PolarChunk.BlockEntity blockEntity) {
         var index = ChunkUtils.getBlockIndex(blockEntity.x(), blockEntity.y(), blockEntity.z());
         buffer.write(INT, index);
-        buffer.write(STRING, blockEntity.id());
+        buffer.writeOptional(STRING, blockEntity.id());
         buffer.write(NBT, blockEntity.data());
-    }
-
-    private static long[] pack(int[] ints, int bitsPerEntry) {
-        int intsPerLong = (int) Math.floor(64d / bitsPerEntry);
-        long[] longs = new long[(int) Math.ceil(ints.length / (double) intsPerLong)];
-
-        long mask = (1L << bitsPerEntry) - 1L;
-        for (int i = 0; i < longs.length; i++) {
-            for (int intIndex = 0; intIndex < intsPerLong; intIndex++) {
-                int bitIndex = intIndex * bitsPerEntry;
-                int intActualIndex = intIndex + i * intsPerLong;
-                if (intActualIndex < ints.length) {
-                    longs[i] |= (ints[intActualIndex] & mask) << bitIndex;
-                }
-            }
-        }
-
-        return longs;
     }
 }
