@@ -10,7 +10,13 @@ import java.util.List;
 /**
  * A Java type representing the latest version of the chunk format.
  */
-public class PolarChunk {
+public record PolarChunk(
+        int x,
+        int z,
+        PolarSection[] sections,
+        List<BlockEntity> blockEntities,
+        byte[][] heightmaps
+) {
 
     public static final int HEIGHTMAP_NONE = 0b0;
     public static final int HEIGHTMAP_MOTION_BLOCKING = 0b1;
@@ -29,41 +35,6 @@ public class PolarChunk {
             HEIGHTMAP_WORLD_SURFACE_WG,
     };
     static final int HEIGHTMAP_BYTE_SIZE = 32;
-
-    private final int x;
-    private final int z;
-
-    private final PolarSection[] sections;
-    private final List<BlockEntity> blockEntities;
-
-    private final byte[][] heightmaps;
-
-    //todo entities
-
-
-    public PolarChunk(int x, int z, PolarSection[] sections, List<BlockEntity> blockEntities, byte[][] heightmaps) {
-        this.x = x;
-        this.z = z;
-        this.sections = sections;
-        this.blockEntities = blockEntities;
-        this.heightmaps = heightmaps;
-    }
-
-    public int x() {
-        return x;
-    }
-
-    public int z() {
-        return z;
-    }
-
-    public @NotNull List<PolarSection> sections() {
-        return List.of(sections);
-    }
-
-    public @NotNull List<BlockEntity> blockEntities() {
-        return blockEntities;
-    }
 
     public byte @Nullable [] heightmap(int type) {
         return heightmaps[type];
