@@ -99,6 +99,16 @@ public class AnvilPolar {
                 for (var sectionData : chunkReader.getSections()) {
                     var sectionReader = new ChunkSectionReader(chunkReader.getMinecraftVersion(), sectionData);
 
+                    if (sectionReader.getY() < minSection) {
+                        if (!sectionReader.isSectionEmpty()) {
+                            logger.error("Non-empty section below minimum... something is wrong with this world :| (min={}, section={})", minSection, sectionReader.getY());
+                            throw new IllegalStateException("Non-empty section below minimum");
+                        }
+
+                        logger.warn("Skipping section below min: {} (min={})", sectionReader.getY(), minSection);
+                        continue;
+                    }
+
                     // Blocks
                     String[] blockPalette;
                     int[] blockData = null;
