@@ -28,7 +28,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'dev.hollowcube:polar:1.0.0'
+    implementation 'dev.hollowcube:polar:<see releases>'
 }
 ```
 
