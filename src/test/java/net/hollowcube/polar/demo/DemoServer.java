@@ -18,7 +18,7 @@ public class DemoServer {
 
         var instance = MinecraftServer.getInstanceManager().createInstanceContainer();
 //        var world = AnvilPolar.anvilToPolar(Path.of("./src/test/resources/testtnt").toRealPath());
-        var world = PolarReader.read(Files.readAllBytes(Path.of("./src/test/resources/testtnt.polar")));
+        var world = PolarReader.read(Files.readAllBytes(Path.of("./src/test/resources/world.polar")));
         instance.setChunkLoader(new PolarLoader(world));
         instance.setChunkSupplier(LightingChunk::new);
 
