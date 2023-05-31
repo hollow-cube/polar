@@ -20,6 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import static net.minestom.server.network.NetworkBuffer.LONG_ARRAY;
+
 public class AnvilPolar {
     private static final Logger logger = LoggerFactory.getLogger(AnvilPolar.class);
 
@@ -112,33 +114,24 @@ public class AnvilPolar {
                     int[] blockData = null;
                     var blockInfo = sectionReader.getBlockPalette();
                     if (blockInfo == null) {
+                        // No blocks present, replace with a full air chunk
                         logger.warn("Chunk section {}, {}, {} has no block palette",
                                 chunkReader.getChunkX(), sectionReader.getY(), chunkReader.getChunkZ());
 
                         blockPalette = new String[]{"minecraft:air"};
+                    } else if (blockInfo.getSize() == 1) {
+                        // Single block palette, no block data.
+                        blockPalette = new String[]{readBlock(blockInfo.get(0))};
                     } else {
-                        blockData = sectionReader.getUncompressedBlockStateIDs();
+                        blockData = new int[PolarSection.BLOCK_PALETTE_SIZE];
+                        var rawBlockData = sectionReader.getCompactedBlockStates().copyArray();
+                        var bitsPerEntry = rawBlockData.length * 64 / PolarSection.BLOCK_PALETTE_SIZE;
+                        PaletteUtil.unpack(blockData, rawBlockData, bitsPerEntry);
+
+//                        blockData = sectionReader.getUncompressedBlockStateIDs();
                         blockPalette = new String[blockInfo.getSize()];
                         for (int i = 0; i < blockPalette.length; i++) {
-                            var paletteEntry = blockInfo.get(i);
-                            var blockName = new StringBuilder(Objects.requireNonNull(paletteEntry.getString("Name")));
-
-                            var propertiesNbt = paletteEntry.getCompound("Properties");
-                            if (propertiesNbt != null && propertiesNbt.getSize() > 0) {
-                                blockName.append("[");
-
-                                for (var property : propertiesNbt) {
-                                    blockName.append(property.getKey())
-                                            .append("=")
-                                            .append(((NBTString) property.getValue()).getValue())
-                                            .append(",");
-                                }
-                                blockName.deleteCharAt(blockName.length() - 1);
-
-                                blockName.append("]");
-                            }
-
-                            blockPalette[i] = blockName.toString();
+                            blockPalette[i] = readBlock(blockInfo.get(i));
                         }
                     }
 
@@ -238,6 +231,30 @@ public class AnvilPolar {
     }
 
     private record ChunkSet(List<PolarChunk> chunks, int minSection, int maxSection) {
+    }
+
+    private static @NotNull String readBlock(@NotNull NBTCompound paletteEntry) {
+        var blockName = new StringBuilder();
+        var namespaceId = Objects.requireNonNull(paletteEntry.getString("Name"))
+                .replace("minecraft:", ""); // No need to include minecraft: prefix, it is assumed.
+        blockName.append(namespaceId);
+
+        var propertiesNbt = paletteEntry.getCompound("Properties");
+        if (propertiesNbt != null && propertiesNbt.getSize() > 0) {
+            blockName.append("[");
+
+            for (var property : propertiesNbt) {
+                blockName.append(property.getKey())
+                        .append("=")
+                        .append(((NBTString) property.getValue()).getValue())
+                        .append(",");
+            }
+            blockName.deleteCharAt(blockName.length() - 1);
+
+            blockName.append("]");
+        }
+
+        return blockName.toString();
     }
 
 }

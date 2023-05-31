@@ -1,12 +1,12 @@
 package net.hollowcube.polar;
 
+import net.hollowcube.polar.compat.ChunkSupplierShim;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.command.builder.arguments.minecraft.ArgumentBlockState;
 import net.minestom.server.command.builder.exception.ArgumentSyntaxException;
 import net.minestom.server.exception.ExceptionManager;
 import net.minestom.server.instance.*;
 import net.minestom.server.instance.block.Block;
-import net.minestom.server.instance.block.BlockHandler;
 import net.minestom.server.instance.block.BlockManager;
 import net.minestom.server.utils.NamespaceID;
 import net.minestom.server.world.biomes.Biome;
@@ -33,6 +33,9 @@ public class PolarLoader implements IChunkLoader {
     private static final BiomeManager BIOME_MANAGER = MinecraftServer.getBiomeManager();
     private static final ExceptionManager EXCEPTION_HANDLER = MinecraftServer.getExceptionManager();
     private static final Logger logger = LoggerFactory.getLogger(PolarLoader.class);
+
+    // Account for changes between main Minestom and minestom-ce.
+    private static final ChunkSupplierShim CHUNK_SUPPLIER = ChunkSupplierShim.select();
 
     private final Path savePath;
     private final PolarWorld worldData;
@@ -76,7 +79,7 @@ public class PolarLoader implements IChunkLoader {
         // here it can be ignored/assumed.
 
         // Load the chunk
-        var chunk = instance.getChunkSupplier().createChunk(instance, chunkX, chunkZ);
+        var chunk = CHUNK_SUPPLIER.createChunk(instance, chunkX, chunkZ);
         synchronized (chunk) {
             //todo replace with java locks, not Asynchronized
             int sectionY = chunk.getMinSection();
