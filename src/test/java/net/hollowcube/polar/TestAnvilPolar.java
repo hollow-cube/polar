@@ -12,13 +12,14 @@ class TestAnvilPolar {
     @Test
     void testConvertAnvilWorld() throws Exception {
         var world = AnvilPolar.anvilToPolar(
-                Path.of("./src/test/resources/bench").toRealPath()
+                Path.of("./src/test/resources/abc").toRealPath(),
+                ChunkSelector.radius(5)
         );
         assertEquals(-4, world.minSection());
 
         var result = PolarWriter.write(world);
         System.out.println(result.length);
-        Files.write(Path.of("./src/test/resources/bench/bench.polar"), result);
+        Files.write(Path.of("./src/test/resources/bench/abc.polar"), result);
     }
 
 }

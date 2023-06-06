@@ -20,10 +20,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import static net.minestom.server.network.NetworkBuffer.LONG_ARRAY;
-
 public class AnvilPolar {
     private static final Logger logger = LoggerFactory.getLogger(AnvilPolar.class);
+
+    private static final boolean FILE_RW_MODE = Boolean.getBoolean("polar.anvil_rw_mode");
+    public static final String FILE_RW_MODE_ERROR = """
+            Hephaistos anvil reader attempted to do normalization and write the result back to disk during read.
+            
+            Polar prevents this behavior by default to avoid modifying the input worlds. Updating this world to a
+            recent version should fix this issue, otherwise you can pass the system property
+            `-Dpolar.anvil_rw_mode=true` to allow this write to occur.
+            """;
 
     public static @NotNull PolarWorld anvilToPolar(@NotNull Path path) throws IOException {
         return anvilToPolar(path, ChunkSelector.all());
@@ -41,7 +48,7 @@ public class AnvilPolar {
                 var regionX = Integer.parseInt(nameParts[1]);
                 var regionZ = Integer.parseInt(nameParts[2]);
 
-                try (var region = new RegionFile(new RandomAccessFile(regionFile.toFile(), "r"), regionX, regionZ)) {
+                try (var region = new RegionFile(new RandomAccessFile(regionFile.toFile(), FILE_RW_MODE ? "rw" : "r"), regionX, regionZ)) {
                     var chunkSet = readAnvilChunks(region, selector);
                     if (chunkSet.chunks.isEmpty()) continue;
 
@@ -55,6 +62,11 @@ public class AnvilPolar {
                     }
 
                     chunks.addAll(chunkSet.chunks());
+                } catch (IOException e) {
+                    if (e.getMessage().equals("Bad file descriptor"))
+                        throw new IOException(FILE_RW_MODE_ERROR, e);
+
+                    throw e;
                 }
             }
         } catch (AnvilException e) {

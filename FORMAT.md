@@ -61,5 +61,3 @@ Entities or some other extra data field needs to be added to chunks in the futur
 | Has ID          | bool   | If unset, Block Entity ID is omitted      |
 | Block Entity ID | string | Will be made optional in a future version |
 | NBT Data        | nbt    |                                           |
-
-todo need to support block entities without ids (minestom does)
