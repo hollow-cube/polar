@@ -20,7 +20,7 @@ The Polar format is described in [FORMAT.md](FORMAT.md).
 
 ## Install
 
-Polar is (to be) available on [maven central](https://search.maven.org/search?q=g:dev.hollowcube%20AND%20a:polar).
+Polar is available on [maven central](https://search.maven.org/search?q=g:dev.hollowcube%20AND%20a:polar).
 
 ```groovy
 repositories {
@@ -48,6 +48,8 @@ instance.saveChunksToStorage();
 ### Anvil interop
 
 Anvil conversion utilities are also included, and can be used something like the following.
+
+> Note: Anvil conversion is only guaranteed to work on recent (1.19+) worlds.
 
 ```
 var polarWorld = AnvilPolar.anvilToPolar(Path.of("/path/to/anvil/world/dir"));
