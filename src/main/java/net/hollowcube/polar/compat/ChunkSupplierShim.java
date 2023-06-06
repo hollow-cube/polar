@@ -6,6 +6,9 @@ import net.minestom.server.instance.Instance;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+
 /**
  * A shim for {@link net.minestom.server.utils.chunk.ChunkSupplier} to allow for
  * compatibility with main Minestom which does not have the lighting PR (which
@@ -17,10 +20,10 @@ public interface ChunkSupplierShim {
 
     static @NotNull ChunkSupplierShim select() {
         try {
-            // If this class is present we have the lighting branch and should use that chunk supplier
-            Class.forName("net.minestom.server.utils.chunk.ChunkSupplier");
+            // If this function is present we have the lighting branch and should use that chunk supplier
+            Instance.class.getDeclaredMethod("getChunkSupplier");
             return (instance, cx, cz) -> instance.getChunkSupplier().createChunk(instance, cx, cz);
-        } catch (ClassNotFoundException e) {
+        } catch (NoSuchMethodException e) {
             // Otherwise we should use the default chunk supplier
             return DynamicChunk::new;
         }
