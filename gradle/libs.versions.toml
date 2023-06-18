@@ -1,14 +1,16 @@
 metadata.format.version = "1.1"
 
 [versions]
-minestom = "f13a7b49fa"
+minestom = "9f3ee89506"
 zstd = "1.5.5-3"
+fastutil = "8.5.12"
 
 nexuspublish = "1.3.0"
 
 [libraries]
 minestom = { group = "dev.hollowcube", name = "minestom-ce", version.ref = "minestom" }
 zstd = { group = "com.github.luben", name = "zstd-jni", version.ref = "zstd" }
+fastutil = { group = "it.unimi.dsi", name = "fastutil", version.ref = "fastutil" }
 
 [plugins]
 nexuspublish = { id = "io.github.gradle-nexus.publish-plugin", version.ref = "nexuspublish" }

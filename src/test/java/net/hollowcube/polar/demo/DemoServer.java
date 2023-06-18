@@ -13,11 +13,13 @@ import java.nio.file.Path;
 
 public class DemoServer {
     public static void main(String[] args) throws Exception {
+        System.setProperty("minestom.chunk-view-distance", "32");
+
         var server = MinecraftServer.init();
 
         var instance = MinecraftServer.getInstanceManager().createInstanceContainer();
-        instance.setChunkLoader(new PolarLoader(Path.of("./src/test/resources/bench/bench.polar")));
-        instance.setChunkSupplier(LightingChunk::new);
+        instance.setChunkLoader(new PolarLoader(Path.of("./src/test/resources/bench.polar")));
+//        instance.setChunkSupplier(LightingChunk::new);
 
         MinecraftServer.getGlobalEventHandler()
                 .addListener(PlayerLoginEvent.class, event -> {
@@ -29,8 +31,12 @@ public class DemoServer {
                 })
                 .addListener(PlayerChatEvent.class, event -> {
                     if (!event.getMessage().equals("save")) return;
+
+                    var start = System.currentTimeMillis();
                     instance.saveChunksToStorage().join();
-                    event.getPlayer().sendMessage("Done!");
+
+                    var time = System.currentTimeMillis() - start;
+                    event.getPlayer().sendMessage("Done in " + (time) + "ms!");
                 });
 
         server.start("0.0.0.0", 25565);

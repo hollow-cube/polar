@@ -1,5 +1,9 @@
 package net.hollowcube.polar;
 
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.shorts.Short2ObjectArrayMap;
+import it.unimi.dsi.fastutil.shorts.Short2ObjectMap;
+import it.unimi.dsi.fastutil.shorts.Short2ObjectOpenHashMap;
 import net.hollowcube.polar.compat.ChunkSupplierShim;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.command.builder.arguments.minecraft.ArgumentBlockState;
@@ -21,10 +25,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinPool;
 
 @SuppressWarnings("UnstableApiUsage")
@@ -36,6 +39,8 @@ public class PolarLoader implements IChunkLoader {
 
     // Account for changes between main Minestom and minestom-ce.
     private static final ChunkSupplierShim CHUNK_SUPPLIER = ChunkSupplierShim.select();
+
+    private static final Map<String, Biome> biomeCache = new ConcurrentHashMap<>();
 
     private final Path savePath;
     private final PolarWorld worldData;
@@ -128,12 +133,14 @@ public class PolarLoader implements IChunkLoader {
         var rawBiomePalette = sectionData.biomePalette();
         var biomePalette = new Biome[rawBiomePalette.length];
         for (int i = 0; i < rawBiomePalette.length; i++) {
-            var biome = BIOME_MANAGER.getByName(NamespaceID.from(rawBiomePalette[i]));
-            if (biome == null) {
-                logger.error("Failed to find biome: {}", rawBiomePalette[i]);
-                biome = Biome.PLAINS;
-            }
-            biomePalette[i] = biome;
+            biomePalette[i] = biomeCache.computeIfAbsent(rawBiomePalette[i], id -> {
+                var biome = BIOME_MANAGER.getByName(NamespaceID.from(id));
+                if (biome == null) {
+                    logger.error("Failed to find biome: {}", id);
+                    biome = Biome.PLAINS;
+                }
+                return biome;
+            });
         }
         if (biomePalette.length == 1) {
             section.biomePalette().fill(biomePalette[0].id());
@@ -141,7 +148,15 @@ public class PolarLoader implements IChunkLoader {
             final var paletteData = sectionData.biomeData();
             section.biomePalette().setAll((x, y, z) -> {
                 int index = x / 4 + (z / 4) * 4 + (y / 4) * 16;
-                return biomePalette[paletteData[index]].id();
+
+                var paletteIndex = paletteData[index];
+                if (paletteIndex >= biomePalette.length) {
+                    logger.error("Invalid biome palette index. This is probably a corrupted world, " +
+                            "but it has been loaded with plains instead. No data has been written.");
+                    return Biome.PLAINS.id();
+                }
+
+                return biomePalette[paletteIndex].id();
             });
         }
 
@@ -171,13 +186,15 @@ public class PolarLoader implements IChunkLoader {
 
     @Override
     public void unloadChunk(Chunk chunk) {
-        updateChunkData(chunk);
+        updateChunkData(new Short2ObjectOpenHashMap<>(), chunk);
     }
 
     @Override
     public @NotNull CompletableFuture<Void> saveChunks(@NotNull Collection<Chunk> chunks) {
+        var blockCache = new Short2ObjectOpenHashMap<String>();
+
         // Update state of each chunk locally
-        chunks.forEach(this::updateChunkData);
+        chunks.forEach(c -> updateChunkData(blockCache, c));
 
         // Write the file to disk
         if (savePath != null) {
@@ -193,7 +210,7 @@ public class PolarLoader implements IChunkLoader {
         return CompletableFuture.completedFuture(null);
     }
 
-    private void updateChunkData(@NotNull Chunk chunk) {
+    private void updateChunkData(@NotNull Short2ObjectMap<String> blockCache, @NotNull Chunk chunk) {
         var dimension = chunk.getInstance().getDimensionType();
 
         var blockEntities = new ArrayList<PolarChunk.BlockEntity>();
@@ -206,32 +223,43 @@ public class PolarLoader implements IChunkLoader {
             //todo check if section is empty and skip
 
             var blockPalette = new ArrayList<String>();
-            var blockData = new int[PolarSection.BLOCK_PALETTE_SIZE];
+            int[] blockData = null;
+            if (section.blockPalette().count() == 0) {
+                // Short circuit empty palette
+                blockPalette.add("air");
+            } else {
+                var localBlockData = new int[PolarSection.BLOCK_PALETTE_SIZE];
 
-            for (int sectionLocalY = 0; sectionLocalY < Chunk.CHUNK_SECTION_SIZE; sectionLocalY++) {
-                for (int z = 0; z < Chunk.CHUNK_SIZE_Z; z++) {
-                    for (int x = 0; x < Chunk.CHUNK_SIZE_X; x++) {
-                        int y = sectionLocalY + sectionY * Chunk.CHUNK_SECTION_SIZE;
-                        var block = chunk.getBlock(x, y, z);
+                section.blockPalette().getAll((x, sectionLocalY, z, blockStateId) -> {
+                    final int blockIndex = x + sectionLocalY * 16 * 16 + z * 16;
 
-                        final int blockIndex = x + sectionLocalY * 16 * 16 + z * 16;
+                    // Section palette
+                    var namespace = blockCache.computeIfAbsent((short) blockStateId, unused -> blockToString(Block.fromStateId((short) blockStateId)));
+                    int paletteId = blockPalette.indexOf(namespace);
+                    if (paletteId == -1) {
+                        paletteId = blockPalette.size();
+                        blockPalette.add(namespace);
+                    }
+                    localBlockData[blockIndex] = paletteId;
+                });
 
-                        // Section palette
-                        var namespace = blockToString(block);
-                        int paletteId = blockPalette.indexOf(namespace);
-                        if (paletteId == -1) {
-                            paletteId = blockPalette.size();
-                            blockPalette.add(namespace);
-                        }
-                        blockData[blockIndex] = paletteId;
+                blockData = localBlockData;
 
-                        // Block entities
-                        var handlerId = block.handler() == null ? null : block.handler().getNamespaceId().asString();
-                        if (handlerId != null || block.hasNbt()) {
-                            blockEntities.add(new PolarChunk.BlockEntity(
-                                    x, y, z, handlerId,
-                                    block.hasNbt() ? Objects.requireNonNull(block.nbt()) : new NBTCompound()
-                            ));
+                // Block entities
+                for (int sectionLocalY = 0; sectionLocalY < Chunk.CHUNK_SECTION_SIZE; sectionLocalY++) {
+                    for (int z = 0; z < Chunk.CHUNK_SIZE_Z; z++) {
+                        for (int x = 0; x < Chunk.CHUNK_SIZE_X; x++) {
+                            int y = sectionLocalY + sectionY * Chunk.CHUNK_SECTION_SIZE;
+                            var block = chunk.getBlock(x, y, z, Block.Getter.Condition.CACHED);
+                            if (block == null) return;
+
+                            var handlerId = block.handler() == null ? null : block.handler().getNamespaceId().asString();
+                            if (handlerId != null || block.hasNbt()) {
+                                blockEntities.add(new PolarChunk.BlockEntity(
+                                        x, y, z, handlerId,
+                                        block.hasNbt() ? Objects.requireNonNull(block.nbt()) : new NBTCompound()
+                                ));
+                            }
                         }
                     }
                 }
