@@ -15,7 +15,9 @@ import java.util.List;
 @SuppressWarnings("UnstableApiUsage")
 public class PolarWorld {
     public static final int MAGIC_NUMBER = 0x506F6C72;
-    public static final short LATEST_VERSION = 1;
+    public static final short LATEST_VERSION = 2;
+
+    static final short VERSION_UNIFIED_LIGHT = 1;
 
     public static CompressionType DEFAULT_COMPRESSION = CompressionType.ZSTD;
 

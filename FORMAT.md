@@ -7,8 +7,7 @@ The polar format resembles the anvil format in many ways, though it is binary, n
 | Name           | Type   | Notes                                                                   |
 |----------------|--------|-------------------------------------------------------------------------|
 | Magic Number   | int    | `Polr`                                                                  |
-| Major Version  | byte   |                                                                         |
-| Minor Version  | byte   |                                                                         |
+| Version        | short  |                                                                         |
 | Compression    | byte   | 0 = None, 1 = Zstd                                                      |
 | Length of data | varint | Uncompressed length of data (or just length of data if `Compression=0`) |
 | World          | world  |                                                                         |
@@ -49,8 +48,9 @@ Entities or some other extra data field needs to be added to chunks in the futur
 | Biome Palette             | array[string] |                                                                   |
 | Biome Palette Data Length | varint        | Only present if `Biome Palette Size > 1`                          |
 | Biome Palette Data        | array[long]   | See the anvil format for more information about this type         |
-| Has Light Data            | bool          | If unset, block and sky light are both ommitted                   |
+| Has Block Light Data      | bool          | If unset, block light is ommitted                                 |
 | Block Light               | bytes         | A 2048 byte long nibble array                                     |
+| Has Sky Light Data        | bool          | If unset, sky light is ommitted                                   |
 | Sky Light                 | bytes         | A 2048 byte long nibble array                                     |
 
 ### Block Entity

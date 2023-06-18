@@ -1,7 +1,5 @@
 package net.hollowcube.polar;
 
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.shorts.Short2ObjectArrayMap;
 import it.unimi.dsi.fastutil.shorts.Short2ObjectMap;
 import it.unimi.dsi.fastutil.shorts.Short2ObjectOpenHashMap;
 import net.hollowcube.polar.compat.ChunkSupplierShim;
@@ -161,10 +159,10 @@ public class PolarLoader implements IChunkLoader {
         }
 
         // Light
-        if (sectionData.hasLightData()) {
+        if (sectionData.hasBlockLightData())
             section.setBlockLight(sectionData.blockLight());
+        if (sectionData.hasSkyLightData())
             section.setSkyLight(sectionData.skyLight());
-        }
     }
 
     private void loadBlockEntity(@NotNull PolarChunk.BlockEntity blockEntity, @NotNull Chunk chunk) {

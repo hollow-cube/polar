@@ -76,11 +76,12 @@ public class PolarWriter {
         }
 
         // Light
-        buffer.write(BOOLEAN, section.hasLightData());
-        if (section.hasLightData()) {
+        buffer.write(BOOLEAN, section.hasBlockLightData());
+        if (section.hasBlockLightData())
             buffer.write(RAW_BYTES, section.blockLight());
+        buffer.write(BOOLEAN, section.hasSkyLightData());
+        if (section.hasSkyLightData())
             buffer.write(RAW_BYTES, section.skyLight());
-        }
     }
 
     private static void writeBlockEntity(@NotNull NetworkBuffer buffer, @NotNull PolarChunk.BlockEntity blockEntity) {
