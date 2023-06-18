@@ -85,17 +85,21 @@ public class PolarSection {
         return biomeData;
     }
 
-    public boolean hasLightData() {
-        return blockLight != null && skyLight != null;
+    public boolean hasBlockLightData() {
+        return blockLight != null;
+    }
+
+    public boolean hasSkyLightData() {
+        return skyLight != null;
     }
 
     public byte[] blockLight() {
-        assert blockLight != null : "must check hasLightData() before calling blockLight()";
+        assert blockLight != null : "must check hasBlockLightData() before calling blockLight()";
         return blockLight;
     }
 
     public byte[] skyLight() {
-        assert skyLight != null : "must check hasLightData() before calling skyLight()";
+        assert skyLight != null : "must check hasSkyLightData() before calling skyLight()";
         return skyLight;
     }
 }

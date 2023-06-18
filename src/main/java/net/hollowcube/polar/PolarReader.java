@@ -35,18 +35,18 @@ public class PolarReader {
         byte minSection = buffer.read(BYTE), maxSection = buffer.read(BYTE);
         assertThat(minSection < maxSection, "Invalid section range");
 
-        var chunks = buffer.readCollection(b -> readChunk(b, maxSection - minSection + 1));
+        var chunks = buffer.readCollection(b -> readChunk(version, b, maxSection - minSection + 1));
 
         return new PolarWorld(version, compression, minSection, maxSection, chunks);
     }
 
-    private static @NotNull PolarChunk readChunk(@NotNull NetworkBuffer buffer, int sectionCount) {
+    private static @NotNull PolarChunk readChunk(short version, @NotNull NetworkBuffer buffer, int sectionCount) {
         var chunkX = buffer.read(VAR_INT);
         var chunkZ = buffer.read(VAR_INT);
 
         var sections = new PolarSection[sectionCount];
         for (int i = 0; i < sectionCount; i++) {
-            sections[i] = readSection(buffer);
+            sections[i] = readSection(version, buffer);
         }
 
         var blockEntities = buffer.readCollection(PolarReader::readBlockEntity);
@@ -68,7 +68,7 @@ public class PolarReader {
         );
     }
 
-    private static @NotNull PolarSection readSection(@NotNull NetworkBuffer buffer) {
+    private static @NotNull PolarSection readSection(short version, @NotNull NetworkBuffer buffer) {
         // If section is empty exit immediately
         if (buffer.read(BOOLEAN)) return new PolarSection();
 
@@ -93,7 +93,13 @@ public class PolarReader {
         }
 
         byte[] blockLight = null, skyLight = null;
-        if (buffer.read(BOOLEAN)) {
+
+        if (version > PolarWorld.VERSION_UNIFIED_LIGHT) {
+            if (buffer.read(BOOLEAN))
+                blockLight = buffer.readBytes(2048);
+            if (buffer.read(BOOLEAN))
+                skyLight = buffer.readBytes(2048);
+        } else {
             blockLight = buffer.readBytes(2048);
             skyLight = buffer.readBytes(2048);
         }

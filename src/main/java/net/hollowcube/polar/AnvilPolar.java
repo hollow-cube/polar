@@ -178,9 +178,12 @@ public class AnvilPolar {
                     }
 
                     // Lighting data, if present
-                    byte[] blockLight = null, skyLight = null;
-                    if (sectionReader.getBlockLight() != null && sectionReader.getSkyLight() != null) {
+                    byte[] blockLight = null;
+                    if (sectionReader.getBlockLight() != null) {
                         blockLight = sectionReader.getBlockLight().copyArray();
+                    }
+                    byte[] skyLight = null;
+                    if (sectionReader.getSkyLight() != null) {
                         skyLight = sectionReader.getSkyLight().copyArray();
                     }
 

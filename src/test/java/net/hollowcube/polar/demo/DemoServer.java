@@ -18,7 +18,7 @@ public class DemoServer {
         var server = MinecraftServer.init();
 
         var instance = MinecraftServer.getInstanceManager().createInstanceContainer();
-        instance.setChunkLoader(new PolarLoader(Path.of("./src/test/resources/bench.polar")));
+        instance.setChunkLoader(new PolarLoader(Path.of("./src/test/resources/emclobby.polar")));
 //        instance.setChunkSupplier(LightingChunk::new);
 
         MinecraftServer.getGlobalEventHandler()
