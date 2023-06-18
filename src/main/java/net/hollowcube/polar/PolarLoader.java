@@ -251,7 +251,7 @@ public class PolarLoader implements IChunkLoader {
                         for (int x = 0; x < Chunk.CHUNK_SIZE_X; x++) {
                             int y = sectionLocalY + sectionY * Chunk.CHUNK_SECTION_SIZE;
                             var block = chunk.getBlock(x, y, z, Block.Getter.Condition.CACHED);
-                            if (block == null) return;
+                            if (block == null) continue;
 
                             var handlerId = block.handler() == null ? null : block.handler().getNamespaceId().asString();
                             if (handlerId != null || block.hasNbt()) {
