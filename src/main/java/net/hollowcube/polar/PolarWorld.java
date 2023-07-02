@@ -32,6 +32,10 @@ public class PolarWorld {
     // Chunk data
     private final Long2ObjectMap<PolarChunk> chunks = new Long2ObjectOpenHashMap<>();
 
+    public PolarWorld() {
+        this(LATEST_VERSION, DEFAULT_COMPRESSION, (byte) -4, (byte) 19, List.of());
+    }
+
     public PolarWorld(
             short version,
             @NotNull CompressionType compression,
