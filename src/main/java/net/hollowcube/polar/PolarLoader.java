@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -44,8 +45,12 @@ public class PolarLoader implements IChunkLoader {
     private final PolarWorld worldData;
 
     public PolarLoader(@NotNull Path path) throws IOException {
-        this.worldData = PolarReader.read(Files.readAllBytes(path));
         this.savePath = path;
+        if (Files.exists(path)) {
+            this.worldData = PolarReader.read(Files.readAllBytes(path));
+        } else {
+            this.worldData = new PolarWorld();
+        }
     }
 
     public PolarLoader(@NotNull InputStream inputStream) throws IOException {
@@ -198,7 +203,8 @@ public class PolarLoader implements IChunkLoader {
         if (savePath != null) {
             return CompletableFuture.runAsync(() -> {
                 try {
-                    Files.write(savePath, PolarWriter.write(worldData));
+                    Files.write(savePath, PolarWriter.write(worldData),
+                            StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
                 } catch (IOException e) {
                     EXCEPTION_HANDLER.handleException(new RuntimeException("Failed to save world", e));
                 }
