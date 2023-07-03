@@ -25,4 +25,5 @@ class TestPolarReader {
         });
         assertEquals("Unsupported Polar version. Up to 1 is supported, found 20560.", e.getMessage());
     }
+
 }
