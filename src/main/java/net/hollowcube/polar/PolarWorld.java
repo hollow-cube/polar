@@ -18,7 +18,7 @@ public class PolarWorld {
     public static final short LATEST_VERSION = 3;
 
     static final short VERSION_UNIFIED_LIGHT = 1;
-    static final short VERSION_OBJECTS_OPT_BLOCK_ENT_NBT = 2;
+    static final short VERSION_USERDATA_OPT_BLOCK_ENT_NBT = 2;
 
     public static CompressionType DEFAULT_COMPRESSION = CompressionType.ZSTD;
 

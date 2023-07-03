@@ -66,6 +66,36 @@ For example, to convert an anvil world while only selecting a 5 chunk radius aro
 AnvilPolar.anvilToPolar(Path.of("/path/to/anvil/world/dir"), ChunkSelector.radius(5));
 ```
 
+### User data & callbacks
+
+By default, Polar only stores blocks, biomes, block entities, and light data. However, in many cases it is desirable
+to have some additional user specific data stored in the world. To accommodate this use case, Polar chunks each have
+a "user data" field, which can contain any arbitrary data. To work with it, you must implement `PolarWorldAccess`,
+and provide an instance to the `PolarLoader` for example, the following will write the time of save in each chunks
+user data:
+
+```java
+public class UpdateTimeWorldAccess implements PolarWorldAccess {
+    private static final Logger logger = LoggerFactory.getLogger(UpdateTimeWorldAccess.class);
+
+    @Override
+    public void loadChunkData(@NotNull Chunk chunk, @Nullable NetworkBuffer userData) {
+        if (userData == null) return; // No saved data, probably first load
+
+        long lastSaveTime = userData.read(NetworkBuffer.LONG);
+        logger.info("loading chunk {}, {} which was saved at {}.", chunk.getChunkX(), chunk.getChunkZ(), lastSaveTime);
+    }
+
+    @Override
+    public void saveChunkData(@NotNull Chunk chunk, @NotNull NetworkBuffer userData) {
+        userData.write(NetworkBuffer.LONG, System.currentTimeMillis());
+    }
+}
+```
+
+Using a `PolarWorldAccess` implementation is as simple as attaching it to the `PolarLoader`: 
+`new PolarLoader(world).setWorldAccess(new UpdateTimeWorldAccess())`
+
 ## Comparison to others
 
 ### "Benchmark"

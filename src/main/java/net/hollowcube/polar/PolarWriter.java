@@ -50,8 +50,7 @@ public class PolarWriter {
         //todo heightmaps
         buffer.write(INT, PolarChunk.HEIGHTMAP_NONE);
 
-        //todo objects
-        buffer.write(VAR_INT, 0);
+        buffer.write(BYTE_ARRAY, chunk.userData());
     }
 
     private static void writeSection(@NotNull NetworkBuffer buffer, @NotNull PolarSection section) {

@@ -62,17 +62,16 @@ public class PolarReader {
         }
 
         // Objects
-        if (version > PolarWorld.VERSION_OBJECTS_OPT_BLOCK_ENT_NBT) {
-            var objectCount = buffer.read(VAR_INT);
-            Check.argCondition(objectCount != 0, "Objects are not supported yet!");
-            //todo objects
-        }
+        byte[] userData = new byte[0];
+        if (version > PolarWorld.VERSION_USERDATA_OPT_BLOCK_ENT_NBT)
+            userData = buffer.read(BYTE_ARRAY);
 
         return new PolarChunk(
                 chunkX, chunkZ,
                 sections,
                 blockEntities,
-                heightmaps
+                heightmaps,
+                userData
         );
     }
 
@@ -120,7 +119,7 @@ public class PolarReader {
         var id = buffer.readOptional(STRING);
 
         NBTCompound nbt = null;
-        if (version <= PolarWorld.VERSION_OBJECTS_OPT_BLOCK_ENT_NBT || buffer.read(BOOLEAN))
+        if (version <= PolarWorld.VERSION_USERDATA_OPT_BLOCK_ENT_NBT || buffer.read(BOOLEAN))
             nbt = (NBTCompound) buffer.read(NBT);
 
         return new PolarChunk.BlockEntity(
