@@ -1,7 +1,6 @@
 package net.hollowcube.polar;
 
 
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jglrxavpok.hephaistos.nbt.NBTCompound;
 
@@ -45,7 +44,7 @@ public record PolarChunk(
             int y,
             int z,
             @Nullable String id,
-            @NotNull NBTCompound data
+            @Nullable NBTCompound data
     ) {
 
     }

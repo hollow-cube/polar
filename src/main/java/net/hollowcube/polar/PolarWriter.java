@@ -49,6 +49,9 @@ public class PolarWriter {
 
         //todo heightmaps
         buffer.write(INT, PolarChunk.HEIGHTMAP_NONE);
+
+        //todo objects
+        buffer.write(VAR_INT, 0);
     }
 
     private static void writeSection(@NotNull NetworkBuffer buffer, @NotNull PolarSection section) {
@@ -88,6 +91,6 @@ public class PolarWriter {
         var index = ChunkUtils.getBlockIndex(blockEntity.x(), blockEntity.y(), blockEntity.z());
         buffer.write(INT, index);
         buffer.writeOptional(STRING, blockEntity.id());
-        buffer.write(NBT, blockEntity.data());
+        buffer.writeOptional(NBT, blockEntity.data());
     }
 }

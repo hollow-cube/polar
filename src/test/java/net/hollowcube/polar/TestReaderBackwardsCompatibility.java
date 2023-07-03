@@ -17,6 +17,11 @@ class TestReaderBackwardsCompatibility {
         runTest(2);
     }
 
+    @Test
+    void testVersion3() {
+        runTest(3);
+    }
+
     private static void runTest(int version) {
         var is = TestReaderBackwardsCompatibility.class.getResourceAsStream("/backward/" + version + ".polar");
         assertNotNull(is);

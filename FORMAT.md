@@ -34,6 +34,8 @@ Entities or some other extra data field needs to be added to chunks in the futur
 | Block Entities           | array[block entity] |                                                                                      |
 | Heightmap Mask           | int                 | A mask indicating which heightmaps are present. See `AnvilChunk` for flag constants. |
 | Heightmaps               | array[bytes]        | One heightmap for each bit present in Heightmap Mask                                 |
+| Number of Objects        | varint              | Number of entries in the following array                                             |
+| Objects                  | array[object]       |                                                                                      |
 
 ### Sections
 
@@ -55,9 +57,23 @@ Entities or some other extra data field needs to be added to chunks in the futur
 
 ### Block Entity
 
-| Name            | Type   | Notes                                     |
-|-----------------|--------|-------------------------------------------|
-| Chunk Pos       | int    |                                           |
-| Has ID          | bool   | If unset, Block Entity ID is omitted      |
-| Block Entity ID | string | Will be made optional in a future version |
-| NBT Data        | nbt    |                                           |
+| Name            | Type   | Notes                                |
+|-----------------|--------|--------------------------------------|
+| Chunk Pos       | int    |                                      |
+| Has ID          | bool   | If unset, Block Entity ID is omitted |
+| Block Entity ID | string |                                      |
+| Has NBT Data    | bool   | If unset, NBT Data is omitted        |
+| NBT Data        | nbt    |                                      |
+
+### Object
+
+| Name                | Type        | Notes                                                            |
+|---------------------|-------------|------------------------------------------------------------------|
+| X                   | double      | World X position                                                 |
+| Y                   | double      | World Y position                                                 |
+| Z                   | double      | World Z position                                                 |
+| Yaw                 | float       |                                                                  |
+| Pitch               | float       |                                                                  |
+| Type                | string      | The type of the object. Completely up to the user implementation |
+| Length of user data | varint      | The length of the following array                                | 
+| User data           | array[byte] |                                                                  |
