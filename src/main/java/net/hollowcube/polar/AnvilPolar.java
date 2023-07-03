@@ -241,12 +241,15 @@ public class AnvilPolar {
 //                OCEAN_FLOOR OCEAN_FLOOR_WG
 //                WORLD_SURFACE WORLD_SURFACE_WG
 
+                var userData = new byte[0];
+
                 chunks.add(new PolarChunk(
                         chunkReader.getChunkX(),
                         chunkReader.getChunkZ(),
                         sections,
                         blockEntities,
-                        heightmaps
+                        heightmaps,
+                        userData
                 ));
             }
         }

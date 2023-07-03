@@ -10,6 +10,7 @@ import net.minestom.server.exception.ExceptionManager;
 import net.minestom.server.instance.*;
 import net.minestom.server.instance.block.Block;
 import net.minestom.server.instance.block.BlockManager;
+import net.minestom.server.network.NetworkBuffer;
 import net.minestom.server.utils.NamespaceID;
 import net.minestom.server.world.biomes.Biome;
 import net.minestom.server.world.biomes.BiomeManager;
@@ -22,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -47,6 +49,7 @@ public class PolarLoader implements IChunkLoader {
     private final ReentrantReadWriteLock worldDataLock = new ReentrantReadWriteLock();
     private final PolarWorld worldData;
 
+    private PolarWorldAccess worldAccess = null;
     private boolean parallel = false;
 
     public PolarLoader(@NotNull Path path) throws IOException {
@@ -72,6 +75,12 @@ public class PolarLoader implements IChunkLoader {
 
     public @NotNull PolarWorld world() {
         return worldData;
+    }
+
+    @Contract("_ -> this")
+    public @NotNull PolarLoader setWorldAccess(@NotNull PolarWorldAccess worldAccess) {
+        this.worldAccess = worldAccess;
+        return this;
     }
 
     /**
@@ -120,6 +129,7 @@ public class PolarLoader implements IChunkLoader {
         var chunk = CHUNK_SUPPLIER.createChunk(instance, chunkX, chunkZ);
         synchronized (chunk) {
             //todo replace with java locks, not synchronized
+            //   actually on second thought, do we really even need to lock the chunk? it is a local variable still
             int sectionY = chunk.getMinSection();
             for (var sectionData : chunkData.sections()) {
                 if (sectionData.isEmpty()) continue;
@@ -131,6 +141,11 @@ public class PolarLoader implements IChunkLoader {
 
             for (var blockEntity : chunkData.blockEntities()) {
                 loadBlockEntity(blockEntity, chunk);
+            }
+
+            var userData = chunkData.userData();
+            if (userData.length > 0 && worldAccess != null) {
+                worldAccess.loadChunkData(chunk, new NetworkBuffer(ByteBuffer.wrap(userData)));
             }
         }
 
@@ -338,6 +353,9 @@ public class PolarLoader implements IChunkLoader {
         var heightmaps = new byte[32][PolarChunk.HEIGHTMAPS.length];
         //todo
 
+        byte[] userData = worldAccess == null ? new byte[0]
+                : NetworkBuffer.makeArray(b -> worldAccess.saveChunkData(chunk, b));
+
         worldDataLock.writeLock().lock();
         worldData.updateChunkAt(
                 chunk.getChunkX(),
@@ -347,7 +365,8 @@ public class PolarLoader implements IChunkLoader {
                         chunk.getChunkZ(),
                         sections,
                         blockEntities,
-                        heightmaps
+                        heightmaps,
+                        userData
                 )
         );
         worldDataLock.writeLock().unlock();
@@ -355,7 +374,7 @@ public class PolarLoader implements IChunkLoader {
 
     @Override
     public @NotNull CompletableFuture<Void> saveChunk(@NotNull Chunk chunk) {
-        throw new UnsupportedOperationException("Polar does not support saving individual chunks, see #saveChunks(Collection<Chunk>) or #saveInstance(Instance)");
+        return saveChunks(List.of(chunk));
     }
 
     private @NotNull String blockToString(@NotNull Block block) {

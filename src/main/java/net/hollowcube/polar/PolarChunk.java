@@ -14,7 +14,8 @@ public record PolarChunk(
         int z,
         PolarSection[] sections,
         List<BlockEntity> blockEntities,
-        byte[][] heightmaps
+        byte[][] heightmaps,
+        byte[] userData
 ) {
 
     public static final int HEIGHTMAP_NONE = 0b0;
