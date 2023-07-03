@@ -14,15 +14,16 @@ import java.util.List;
  */
 @SuppressWarnings("UnstableApiUsage")
 public class PolarWorld {
-    public static final int MAGIC_NUMBER = 0x506F6C72;
-    public static final short LATEST_VERSION = 2;
+    public static final int MAGIC_NUMBER = 0x506F6C72; // `Polr`
+    public static final short LATEST_VERSION = 3;
 
     static final short VERSION_UNIFIED_LIGHT = 1;
+    static final short VERSION_OBJECTS_OPT_BLOCK_ENT_NBT = 2;
 
     public static CompressionType DEFAULT_COMPRESSION = CompressionType.ZSTD;
 
     // Polar metadata
-    private short version;
+    private final short version;
     private CompressionType compression;
 
     // World metadata
@@ -60,6 +61,9 @@ public class PolarWorld {
 
     public @NotNull CompressionType compression() {
         return compression;
+    }
+    public void setCompression(@NotNull CompressionType compression) {
+        this.compression = compression;
     }
 
     public byte minSection() {

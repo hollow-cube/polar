@@ -13,6 +13,7 @@ import net.minestom.server.instance.block.BlockManager;
 import net.minestom.server.utils.NamespaceID;
 import net.minestom.server.world.biomes.Biome;
 import net.minestom.server.world.biomes.BiomeManager;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jglrxavpok.hephaistos.nbt.NBTCompound;
@@ -28,6 +29,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 @SuppressWarnings("UnstableApiUsage")
 public class PolarLoader implements IChunkLoader {
@@ -42,7 +44,10 @@ public class PolarLoader implements IChunkLoader {
     private static final Map<String, Biome> biomeCache = new ConcurrentHashMap<>();
 
     private final Path savePath;
+    private final ReentrantReadWriteLock worldDataLock = new ReentrantReadWriteLock();
     private final PolarWorld worldData;
+
+    private boolean parallel = false;
 
     public PolarLoader(@NotNull Path path) throws IOException {
         this.savePath = path;
@@ -69,7 +74,29 @@ public class PolarLoader implements IChunkLoader {
         return worldData;
     }
 
+    /**
+     * Sets the loader to save and load in parallel.
+     * <br/><br/>
+     * The Polar loader on its own supports parallel load out of the box, but
+     * a user implementation of {@link PolarWorldAccess} may not support parallel
+     * operations, so care must be taken when enabling this option.
+     *
+     * @param parallel True to load and save chunks in parallel, false otherwise.
+     * @return this
+     */
+    @Contract("_ -> this")
+    public @NotNull PolarLoader setParallel(boolean parallel) {
+        this.parallel = parallel;
+        return this;
+    }
+
     // Loading
+
+
+    @Override
+    public boolean supportsParallelLoading() {
+        return parallel;
+    }
 
     @Override
     public void loadInstance(@NotNull Instance instance) {
@@ -78,7 +105,10 @@ public class PolarLoader implements IChunkLoader {
 
     @Override
     public @NotNull CompletableFuture<@Nullable Chunk> loadChunk(@NotNull Instance instance, int chunkX, int chunkZ) {
+        // Only need to lock for this tiny part, chunks are immutable.
+        worldDataLock.readLock().lock();
         var chunkData = worldData.chunkAt(chunkX, chunkZ);
+        worldDataLock.readLock().unlock();
         if (chunkData == null) return CompletableFuture.completedFuture(null);
 
         // We are making the assumption here that the chunk height is the same as this world.
@@ -89,7 +119,7 @@ public class PolarLoader implements IChunkLoader {
         // Load the chunk
         var chunk = CHUNK_SUPPLIER.createChunk(instance, chunkX, chunkZ);
         synchronized (chunk) {
-            //todo replace with java locks, not Asynchronized
+            //todo replace with java locks, not synchronized
             int sectionY = chunk.getMinSection();
             for (var sectionData : chunkData.sections()) {
                 if (sectionData.isEmpty()) continue;
@@ -174,13 +204,21 @@ public class PolarLoader implements IChunkLoader {
         // Fetch the block type, we can ignore Handler/NBT since we are about to replace it
         var block = chunk.getBlock(blockEntity.x(), blockEntity.y(), blockEntity.z(), Block.Getter.Condition.TYPE);
 
-        block = block.withHandler(BLOCK_MANAGER.getHandlerOrDummy(blockEntity.id()));
-        block = block.withNbt(blockEntity.data());
+        if (blockEntity.id() != null)
+            block = block.withHandler(BLOCK_MANAGER.getHandlerOrDummy(blockEntity.id()));
+        if (blockEntity.data() != null)
+            block = block.withNbt(blockEntity.data());
 
         chunk.setBlock(blockEntity.x(), blockEntity.y(), blockEntity.z(), block);
     }
 
     // Unloading/saving
+
+
+    @Override
+    public boolean supportsParallelSaving() {
+        return parallel;
+    }
 
     @Override
     public @NotNull CompletableFuture<Void> saveInstance(@NotNull Instance instance) {
@@ -260,8 +298,7 @@ public class PolarLoader implements IChunkLoader {
                             var handlerId = block.handler() == null ? null : block.handler().getNamespaceId().asString();
                             if (handlerId != null || block.hasNbt()) {
                                 blockEntities.add(new PolarChunk.BlockEntity(
-                                        x, y, z, handlerId,
-                                        block.hasNbt() ? Objects.requireNonNull(block.nbt()) : new NBTCompound()
+                                        x, y, z, handlerId, block.nbt()
                                 ));
                             }
                         }
@@ -301,6 +338,7 @@ public class PolarLoader implements IChunkLoader {
         var heightmaps = new byte[32][PolarChunk.HEIGHTMAPS.length];
         //todo
 
+        worldDataLock.writeLock().lock();
         worldData.updateChunkAt(
                 chunk.getChunkX(),
                 chunk.getChunkZ(),
@@ -312,6 +350,7 @@ public class PolarLoader implements IChunkLoader {
                         heightmaps
                 )
         );
+        worldDataLock.writeLock().unlock();
     }
 
     @Override

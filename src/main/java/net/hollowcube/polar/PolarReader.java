@@ -3,6 +3,7 @@ package net.hollowcube.polar;
 import com.github.luben.zstd.Zstd;
 import net.minestom.server.network.NetworkBuffer;
 import net.minestom.server.utils.chunk.ChunkUtils;
+import net.minestom.server.utils.validate.Check;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jglrxavpok.hephaistos.nbt.NBTCompound;
@@ -49,7 +50,7 @@ public class PolarReader {
             sections[i] = readSection(version, buffer);
         }
 
-        var blockEntities = buffer.readCollection(PolarReader::readBlockEntity);
+        var blockEntities = buffer.readCollection(b -> readBlockEntity(version, b));
 
         var heightmaps = new byte[PolarChunk.HEIGHTMAP_BYTE_SIZE][PolarChunk.HEIGHTMAPS.length];
         int heightmapMask = buffer.read(INT);
@@ -58,6 +59,13 @@ public class PolarReader {
                 continue;
 
             heightmaps[i] = buffer.readBytes(32);
+        }
+
+        // Objects
+        if (version > PolarWorld.VERSION_OBJECTS_OPT_BLOCK_ENT_NBT) {
+            var objectCount = buffer.read(VAR_INT);
+            Check.argCondition(objectCount != 0, "Objects are not supported yet!");
+            //todo objects
         }
 
         return new PolarChunk(
@@ -107,10 +115,14 @@ public class PolarReader {
         return new PolarSection(blockPalette, blockData, biomePalette, biomeData, blockLight, skyLight);
     }
 
-    private static @NotNull PolarChunk.BlockEntity readBlockEntity(@NotNull NetworkBuffer buffer) {
+    private static @NotNull PolarChunk.BlockEntity readBlockEntity(int version, @NotNull NetworkBuffer buffer) {
         int posIndex = buffer.read(INT);
         var id = buffer.readOptional(STRING);
-        var nbt = (NBTCompound) buffer.read(NBT);
+
+        NBTCompound nbt = null;
+        if (version <= PolarWorld.VERSION_OBJECTS_OPT_BLOCK_ENT_NBT || buffer.read(BOOLEAN))
+            nbt = (NBTCompound) buffer.read(NBT);
+
         return new PolarChunk.BlockEntity(
                 ChunkUtils.blockIndexToChunkPositionX(posIndex),
                 ChunkUtils.blockIndexToChunkPositionY(posIndex),
