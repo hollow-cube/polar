@@ -32,13 +32,67 @@ public class AnvilPolar {
             `-Dpolar.anvil_rw_mode=true` to allow this write to occur.
             """;
 
+    /**
+     * Convert the anvil world at the given path to a Polar world. The world height range (in sections) is assumed
+     * to be from -4 to 19 (inclusive), which is the default for recent Minecraft versions.
+     * <br />
+     * All chunks from all regions in the anvil world will be included in the Polar world.
+     *
+     * @param path Path to the anvil world (the directory containing the region directory)
+     * @return The Polar world representing the given Anvil world
+     * @throws IOException If there was an error reading the anvil world
+     */
     public static @NotNull PolarWorld anvilToPolar(@NotNull Path path) throws IOException {
-        return anvilToPolar(path, ChunkSelector.all());
+        return anvilToPolar(path, -4, 19, ChunkSelector.all());
     }
 
+    /**
+     * Convert the anvil world at the given path to a Polar world. The world height range (in sections) is assumed
+     * to be from -4 to 19 (inclusive), which is the default for recent Minecraft versions.
+     * <br />
+     * Only the selected chunks will be included in the resulting Polar world.
+     *
+     * @param path Path to the anvil world (the directory containing the region directory)
+     * @param selector Chunk selector to use to determine which chunks to include in the Polar world
+     * @return The Polar world representing the given Anvil world
+     * @throws IOException If there was an error reading the anvil world
+     */
     public static @NotNull PolarWorld anvilToPolar(@NotNull Path path, @NotNull ChunkSelector selector) throws IOException {
-        int minSection = Integer.MAX_VALUE, maxSection = Integer.MIN_VALUE;
+        return anvilToPolar(path, -4, 19, selector);
+    }
 
+    /**
+     * Convert the anvil world at the given path to a Polar world. The provided world height range
+     * will be used to determine which sections will be included in the Polar world. If a section is missing,
+     * an empty polar section will be included in its place.
+     * <br />
+     * All chunks from all regions in the anvil world will be included in the Polar world.
+     *
+     * @param path Path to the anvil world (the directory containing the region directory)
+     * @param minSection The minimum section to include in the Polar world
+     * @param maxSection The maximum section to include in the Polar world
+     * @return The Polar world representing the given Anvil world
+     * @throws IOException If there was an error reading the anvil world
+     */
+    public static @NotNull PolarWorld anvilToPolar(@NotNull Path path, int minSection, int maxSection) throws IOException {
+        return anvilToPolar(path, minSection, maxSection, ChunkSelector.all());
+    }
+
+    /**
+     * Convert the anvil world at the given path to a Polar world. The provided world height range
+     * will be used to determine which sections will be included in the Polar world. If a section is missing,
+     * an empty polar section will be included in its place.
+     * <br />
+     * Only the selected chunks will be included in the resulting Polar world.
+     *
+     * @param path Path to the anvil world (the directory containing the region directory)
+     * @param minSection The minimum section to include in the Polar world
+     * @param maxSection The maximum section to include in the Polar world
+     * @param selector Chunk selector to use to determine which chunks to include in the Polar world
+     * @return The Polar world representing the given Anvil world
+     * @throws IOException If there was an error reading the anvil world
+     */
+    public static @NotNull PolarWorld anvilToPolar(@NotNull Path path, int minSection, int maxSection, @NotNull ChunkSelector selector) throws IOException {
         var chunks = new ArrayList<PolarChunk>();
         try (var files = Files.walk(path.resolve("region"), 1)) {
             for (var regionFile : files.toList()) {
@@ -49,19 +103,7 @@ public class AnvilPolar {
                 var regionZ = Integer.parseInt(nameParts[2]);
 
                 try (var region = new RegionFile(new RandomAccessFile(regionFile.toFile(), FILE_RW_MODE ? "rw" : "r"), regionX, regionZ)) {
-                    var chunkSet = readAnvilChunks(region, selector);
-                    if (chunkSet.chunks.isEmpty()) continue;
-
-                    if (minSection == Integer.MAX_VALUE) {
-                        minSection = chunkSet.minSection();
-                        maxSection = chunkSet.maxSection();
-                    } else {
-                        if (minSection != chunkSet.minSection() || maxSection != chunkSet.maxSection()) {
-                            throw new IllegalStateException("Inconsistent world height 2 " + minSection + " " + maxSection + " " + chunkSet.minSection() + " " + chunkSet.maxSection());
-                        }
-                    }
-
-                    chunks.addAll(chunkSet.chunks());
+                    chunks.addAll(readAnvilChunks(region, minSection, maxSection, selector));
                 } catch (IOException e) {
                     if (e.getMessage().equals("Bad file descriptor"))
                         throw new IOException(FILE_RW_MODE_ERROR, e);
@@ -81,9 +123,7 @@ public class AnvilPolar {
         );
     }
 
-    private static @NotNull ChunkSet readAnvilChunks(@NotNull RegionFile regionFile, @NotNull ChunkSelector selector) throws AnvilException, IOException {
-        int minSection = Integer.MAX_VALUE, maxSection = Integer.MIN_VALUE;
-
+    private static @NotNull List<PolarChunk> readAnvilChunks(@NotNull RegionFile regionFile, int minSection, int maxSection, @NotNull ChunkSelector selector) throws AnvilException, IOException {
         var chunks = new ArrayList<PolarChunk>();
         for (int x = 0; x < 32; x++) {
             for (int z = 0; z < 32; z++) {
@@ -97,27 +137,16 @@ public class AnvilPolar {
 
                 var chunkReader = new ChunkReader(chunkData);
 
-                var yRange = chunkReader.getYRange();
-                if (minSection == Integer.MAX_VALUE) {
-                    minSection = yRange.getStart() >> 4;
-                    maxSection = yRange.getEndInclusive() >> 4;
-                } else {
-                    if (minSection != yRange.getStart() >> 4 || maxSection != yRange.getEndInclusive() >> 4) {
-                        throw new IllegalStateException("Inconsistent world height");
-                    }
-                }
-
                 var sections = new PolarSection[maxSection - minSection + 1];
                 for (var sectionData : chunkReader.getSections()) {
                     var sectionReader = new ChunkSectionReader(chunkReader.getMinecraftVersion(), sectionData);
 
                     if (sectionReader.getY() < minSection) {
-                        if (!sectionReader.isSectionEmpty()) {
-                            logger.error("Non-empty section below minimum... something is wrong with this world :| (min={}, section={})", minSection, sectionReader.getY());
-                            throw new IllegalStateException("Non-empty section below minimum");
-                        }
-
                         logger.warn("Skipping section below min: {} (min={})", sectionReader.getY(), minSection);
+                        continue;
+                    }
+                    if (sectionReader.getY() > maxSection) {
+                        logger.warn("Skipping section above max: {} (max={})", sectionReader.getY(), maxSection);
                         continue;
                     }
 
@@ -193,6 +222,11 @@ public class AnvilPolar {
                             blockLight, skyLight
                     );
                 }
+                // Fill in the remaining sections with empty sections
+                for (int i = 0; i < sections.length; i++) {
+                    if (sections[i] != null) continue;
+                    sections[i] = new PolarSection();
+                }
 
                 var blockEntities = new ArrayList<PolarChunk.BlockEntity>();
                 for (var blockEntityCompound : chunkReader.getBlockEntities()) {
@@ -216,7 +250,7 @@ public class AnvilPolar {
                 ));
             }
         }
-        return new ChunkSet(chunks, minSection, maxSection);
+        return chunks;
     }
 
     private static @Nullable PolarChunk.BlockEntity convertBlockEntity(@NotNull NBTCompound blockEntityCompound) {
@@ -243,9 +277,6 @@ public class AnvilPolar {
         mutableCopy.remove("keepPacked");
 
         return new PolarChunk.BlockEntity(x, y, z, blockEntityId, mutableCopy.toCompound());
-    }
-
-    private record ChunkSet(List<PolarChunk> chunks, int minSection, int maxSection) {
     }
 
     private static @NotNull String readBlock(@NotNull NBTCompound paletteEntry) {

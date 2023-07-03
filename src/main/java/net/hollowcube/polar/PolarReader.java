@@ -99,7 +99,7 @@ public class PolarReader {
                 blockLight = buffer.readBytes(2048);
             if (buffer.read(BOOLEAN))
                 skyLight = buffer.readBytes(2048);
-        } else {
+        } else if (buffer.read(BOOLEAN)) {
             blockLight = buffer.readBytes(2048);
             skyLight = buffer.readBytes(2048);
         }
