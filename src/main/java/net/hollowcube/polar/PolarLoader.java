@@ -274,87 +274,93 @@ public class PolarLoader implements IChunkLoader {
         var sections = new PolarSection[dimension.getHeight() / Chunk.CHUNK_SECTION_SIZE];
         assert sections.length == chunk.getSections().size(): "World height mismatch";
 
-        for (int i = 0; i < sections.length; i++) {
-            int sectionY = i + chunk.getMinSection();
-            var section = chunk.getSection(sectionY);
-            //todo check if section is empty and skip
+        var heightmaps = new byte[32][PolarChunk.HEIGHTMAPS.length];
 
-            var blockPalette = new ArrayList<String>();
-            int[] blockData = null;
-            if (section.blockPalette().count() == 0) {
-                // Short circuit empty palette
-                blockPalette.add("air");
-            } else {
-                var localBlockData = new int[PolarSection.BLOCK_PALETTE_SIZE];
+        var userData = new byte[0];
 
-                section.blockPalette().getAll((x, sectionLocalY, z, blockStateId) -> {
-                    final int blockIndex = x + sectionLocalY * 16 * 16 + z * 16;
+        synchronized (chunk) {
+            for (int i = 0; i < sections.length; i++) {
+                int sectionY = i + chunk.getMinSection();
+                var section = chunk.getSection(sectionY);
+                //todo check if section is empty and skip
 
-                    // Section palette
-                    var namespace = blockCache.computeIfAbsent((short) blockStateId, unused -> blockToString(Block.fromStateId((short) blockStateId)));
-                    int paletteId = blockPalette.indexOf(namespace);
-                    if (paletteId == -1) {
-                        paletteId = blockPalette.size();
-                        blockPalette.add(namespace);
-                    }
-                    localBlockData[blockIndex] = paletteId;
-                });
+                var blockPalette = new ArrayList<String>();
+                int[] blockData = null;
+                if (section.blockPalette().count() == 0) {
+                    // Short circuit empty palette
+                    blockPalette.add("air");
+                } else {
+                    var localBlockData = new int[PolarSection.BLOCK_PALETTE_SIZE];
 
-                blockData = localBlockData;
+                    section.blockPalette().getAll((x, sectionLocalY, z, blockStateId) -> {
+                        final int blockIndex = x + sectionLocalY * 16 * 16 + z * 16;
 
-                // Block entities
-                for (int sectionLocalY = 0; sectionLocalY < Chunk.CHUNK_SECTION_SIZE; sectionLocalY++) {
-                    for (int z = 0; z < Chunk.CHUNK_SIZE_Z; z++) {
-                        for (int x = 0; x < Chunk.CHUNK_SIZE_X; x++) {
-                            int y = sectionLocalY + sectionY * Chunk.CHUNK_SECTION_SIZE;
-                            var block = chunk.getBlock(x, y, z, Block.Getter.Condition.CACHED);
-                            if (block == null) continue;
+                        // Section palette
+                        var namespace = blockCache.computeIfAbsent((short) blockStateId, unused -> blockToString(Block.fromStateId((short) blockStateId)));
+                        int paletteId = blockPalette.indexOf(namespace);
+                        if (paletteId == -1) {
+                            paletteId = blockPalette.size();
+                            blockPalette.add(namespace);
+                        }
+                        localBlockData[blockIndex] = paletteId;
+                    });
 
-                            var handlerId = block.handler() == null ? null : block.handler().getNamespaceId().asString();
-                            if (handlerId != null || block.hasNbt()) {
-                                blockEntities.add(new PolarChunk.BlockEntity(
-                                        x, y, z, handlerId, block.nbt()
-                                ));
+                    blockData = localBlockData;
+
+                    // Block entities
+                    for (int sectionLocalY = 0; sectionLocalY < Chunk.CHUNK_SECTION_SIZE; sectionLocalY++) {
+                        for (int z = 0; z < Chunk.CHUNK_SIZE_Z; z++) {
+                            for (int x = 0; x < Chunk.CHUNK_SIZE_X; x++) {
+                                int y = sectionLocalY + sectionY * Chunk.CHUNK_SECTION_SIZE;
+                                var block = chunk.getBlock(x, y, z, Block.Getter.Condition.CACHED);
+                                if (block == null) continue;
+
+                                var handlerId = block.handler() == null ? null : block.handler().getNamespaceId().asString();
+                                if (handlerId != null || block.hasNbt()) {
+                                    blockEntities.add(new PolarChunk.BlockEntity(
+                                            x, y, z, handlerId, block.nbt()
+                                    ));
+                                }
                             }
                         }
                     }
                 }
-            }
 
-            var biomePalette = new ArrayList<String>();
-            var biomeData = new int[PolarSection.BIOME_PALETTE_SIZE];
+                var biomePalette = new ArrayList<String>();
+                var biomeData = new int[PolarSection.BIOME_PALETTE_SIZE];
 
-            section.biomePalette().getAll((x, y, z, id) -> {
-                var biomeId = BIOME_MANAGER.getById(id).name().asString();
+                section.biomePalette().getAll((x, y, z, id) -> {
+                    var biomeId = BIOME_MANAGER.getById(id).name().asString();
 
-                var paletteId = biomePalette.indexOf(biomeId);
-                if (paletteId == -1) {
-                    paletteId = biomePalette.size();
-                    biomePalette.add(biomeId);
+                    var paletteId = biomePalette.indexOf(biomeId);
+                    if (paletteId == -1) {
+                        paletteId = biomePalette.size();
+                        biomePalette.add(biomeId);
+                    }
+
+                    biomeData[x + z * 4 + y * 4 * 4] = paletteId;
+                });
+
+                byte[] blockLight = section.blockLight().array();
+                byte[] skyLight = section.skyLight().array();
+                if (blockLight.length != 2048 || skyLight.length != 2048) {
+                    blockLight = null;
+                    skyLight = null;
                 }
 
-                biomeData[x + z * 4 + y * 4 * 4] = paletteId;
-            });
-
-            byte[] blockLight = section.blockLight().array();
-            byte[] skyLight = section.skyLight().array();
-            if (blockLight.length != 2048 || skyLight.length != 2048) {
-                blockLight = null;
-                skyLight = null;
+                sections[i] = new PolarSection(
+                        blockPalette.toArray(new String[0]), blockData,
+                        biomePalette.toArray(new String[0]), biomeData,
+                        blockLight, skyLight
+                );
             }
 
-            sections[i] = new PolarSection(
-                    blockPalette.toArray(new String[0]), blockData,
-                    biomePalette.toArray(new String[0]), biomeData,
-                    blockLight, skyLight
-            );
+            //todo heightmaps
+
+            if (worldAccess != null)
+                userData = NetworkBuffer.makeArray(b -> worldAccess.saveChunkData(chunk, b));
+
         }
-
-        var heightmaps = new byte[32][PolarChunk.HEIGHTMAPS.length];
-        //todo
-
-        byte[] userData = worldAccess == null ? new byte[0]
-                : NetworkBuffer.makeArray(b -> worldAccess.saveChunkData(chunk, b));
 
         worldDataLock.writeLock().lock();
         worldData.updateChunkAt(
