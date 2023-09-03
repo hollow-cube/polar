@@ -132,7 +132,10 @@ public class PolarLoader implements IChunkLoader {
             //   actually on second thought, do we really even need to lock the chunk? it is a local variable still
             int sectionY = chunk.getMinSection();
             for (var sectionData : chunkData.sections()) {
-                if (sectionData.isEmpty()) continue;
+                if (sectionData.isEmpty()) {
+                    sectionY++;
+                    continue;
+                }
 
                 var section = chunk.getSection(sectionY);
                 loadSection(sectionData, section);
