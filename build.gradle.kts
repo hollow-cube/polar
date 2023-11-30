@@ -16,7 +16,9 @@ repositories {
 }
 
 dependencies {
-    compileOnly(libs.minestom)
+    val minestom = libs.minestomSnapshot
+
+    compileOnly(minestom)
     implementation(libs.zstd)
     // Fastutil is only included because minestom already uses it, otherwise it is a crazy dependency
     // for how it is used in this project.
@@ -27,7 +29,7 @@ dependencies {
 
     testImplementation(platform("org.junit:junit-bom:5.9.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")
-    testImplementation(libs.minestom)
+    testImplementation(minestom)
 }
 
 java {

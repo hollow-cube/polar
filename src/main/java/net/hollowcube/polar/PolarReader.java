@@ -6,8 +6,12 @@ import net.minestom.server.utils.chunk.ChunkUtils;
 import net.minestom.server.utils.validate.Check;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import org.jglrxavpok.hephaistos.nbt.CompressedProcesser;
+import org.jglrxavpok.hephaistos.nbt.NBT;
 import org.jglrxavpok.hephaistos.nbt.NBTCompound;
+import org.jglrxavpok.hephaistos.nbt.NBTReader;
 
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 import static net.minestom.server.network.NetworkBuffer.*;
@@ -119,8 +123,13 @@ public class PolarReader {
         var id = buffer.readOptional(STRING);
 
         NBTCompound nbt = null;
-        if (version <= PolarWorld.VERSION_USERDATA_OPT_BLOCK_ENT_NBT || buffer.read(BOOLEAN))
-            nbt = (NBTCompound) buffer.read(NBT);
+        if (version <= PolarWorld.VERSION_USERDATA_OPT_BLOCK_ENT_NBT || buffer.read(BOOLEAN)) {
+            if (version <= PolarWorld.VERSION_MINESTOM_NBT_READ_BREAK) {
+                nbt = (NBTCompound) legacyReadNBT(buffer);
+            } else {
+                buffer.read(NBT);
+            }
+        }
 
         return new PolarChunk.BlockEntity(
                 ChunkUtils.blockIndexToChunkPositionX(posIndex),
@@ -146,6 +155,31 @@ public class PolarReader {
                 yield newBuffer;
             }
         };
+    }
+
+    /**
+     * Minecraft (so Minestom) had a breaking change in NBT reading in 1.20.2. This method replicates the old
+     * behavior which we use for any Polar version less than {@link PolarWorld#VERSION_MINESTOM_NBT_READ_BREAK}.
+     *
+     * @see NetworkBuffer#NBT
+     */
+    private static org.jglrxavpok.hephaistos.nbt.NBT legacyReadNBT(@NotNull NetworkBuffer buffer) {
+        try {
+            var nbtReader = new NBTReader(new InputStream() {
+                @Override
+                public int read() {
+                    return buffer.read(BYTE) & 0xFF;
+                }
+                @Override
+                public int available() {
+                    return buffer.readableBytes();
+                }
+            }, CompressedProcesser.NONE);
+
+            return nbtReader.read();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Contract("false, _ -> fail")
