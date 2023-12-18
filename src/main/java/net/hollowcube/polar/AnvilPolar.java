@@ -119,6 +119,7 @@ public class AnvilPolar {
                 PolarWorld.LATEST_VERSION,
                 PolarWorld.DEFAULT_COMPRESSION,
                 (byte) minSection, (byte) maxSection,
+                new byte[0],
                 chunks
         );
     }

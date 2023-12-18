@@ -18,6 +18,7 @@ public class PolarWriter {
         var content = new NetworkBuffer(ByteBuffer.allocate(1024));
         content.write(BYTE, world.minSection());
         content.write(BYTE, world.maxSection());
+        content.write(BYTE_ARRAY, world.userData());
         content.writeCollection(world.chunks(), PolarWriter::writeChunk);
 
         // Create final buffer

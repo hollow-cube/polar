@@ -19,7 +19,7 @@ class TestAnvilPolar {
 
         var result = PolarWriter.write(world);
         System.out.println(result.length);
-        Files.write(Path.of("./src/test/resources/4.polar"), result);
+        Files.write(Path.of("./src/test/resources/5.polar"), result);
     }
 
 }
