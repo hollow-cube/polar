@@ -11,13 +11,10 @@ import net.minestom.server.instance.*;
 import net.minestom.server.instance.block.Block;
 import net.minestom.server.instance.block.BlockManager;
 import net.minestom.server.network.NetworkBuffer;
-import net.minestom.server.utils.NamespaceID;
 import net.minestom.server.world.biomes.Biome;
-import net.minestom.server.world.biomes.BiomeManager;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jglrxavpok.hephaistos.nbt.NBTCompound;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,20 +33,20 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 @SuppressWarnings("UnstableApiUsage")
 public class PolarLoader implements IChunkLoader {
     private static final BlockManager BLOCK_MANAGER = MinecraftServer.getBlockManager();
-    private static final BiomeManager BIOME_MANAGER = MinecraftServer.getBiomeManager();
     private static final ExceptionManager EXCEPTION_HANDLER = MinecraftServer.getExceptionManager();
-    private static final Logger logger = LoggerFactory.getLogger(PolarLoader.class);
+    static final Logger logger = LoggerFactory.getLogger(PolarLoader.class);
 
     // Account for changes between main Minestom and minestom-ce.
     private static final ChunkSupplierShim CHUNK_SUPPLIER = ChunkSupplierShim.select();
 
-    private static final Map<String, Biome> biomeCache = new ConcurrentHashMap<>();
+    private final Map<String, Biome> biomeReadCache = new ConcurrentHashMap<>();
+    private final Map<Integer, String> biomeWriteCache = new ConcurrentHashMap<>();
 
     private final Path savePath;
     private final ReentrantReadWriteLock worldDataLock = new ReentrantReadWriteLock();
     private final PolarWorld worldData;
 
-    private PolarWorldAccess worldAccess = null;
+    private PolarWorldAccess worldAccess = PolarWorldAccess.DEFAULT;
     private boolean parallel = false;
 
     public PolarLoader(@NotNull Path path) throws IOException {
@@ -109,7 +106,10 @@ public class PolarLoader implements IChunkLoader {
 
     @Override
     public void loadInstance(@NotNull Instance instance) {
-        //todo validate that the chunk is loadable in this world
+        var userData = worldData.userData();
+        if (userData.length > 0) {
+            worldAccess.loadWorldData(instance, new NetworkBuffer(ByteBuffer.wrap(userData)));
+        }
     }
 
     @Override
@@ -147,7 +147,7 @@ public class PolarLoader implements IChunkLoader {
             }
 
             var userData = chunkData.userData();
-            if (userData.length > 0 && worldAccess != null) {
+            if (userData.length > 0) {
                 worldAccess.loadChunkData(chunk, new NetworkBuffer(ByteBuffer.wrap(userData)));
             }
         }
@@ -184,14 +184,7 @@ public class PolarLoader implements IChunkLoader {
         var rawBiomePalette = sectionData.biomePalette();
         var biomePalette = new Biome[rawBiomePalette.length];
         for (int i = 0; i < rawBiomePalette.length; i++) {
-            biomePalette[i] = biomeCache.computeIfAbsent(rawBiomePalette[i], id -> {
-                var biome = BIOME_MANAGER.getByName(NamespaceID.from(id));
-                if (biome == null) {
-                    logger.error("Failed to find biome: {}", id);
-                    biome = Biome.PLAINS;
-                }
-                return biome;
-            });
+            biomePalette[i] = biomeReadCache.computeIfAbsent(rawBiomePalette[i], worldAccess::getBiome);
         }
         if (biomePalette.length == 1) {
             section.biomePalette().fill(biomePalette[0].id());
@@ -333,7 +326,7 @@ public class PolarLoader implements IChunkLoader {
                 var biomeData = new int[PolarSection.BIOME_PALETTE_SIZE];
 
                 section.biomePalette().getAll((x, y, z, id) -> {
-                    var biomeId = BIOME_MANAGER.getById(id).name().asString();
+                    var biomeId = biomeWriteCache.computeIfAbsent(id, worldAccess::getBiomeName);
 
                     var paletteId = biomePalette.indexOf(biomeId);
                     if (paletteId == -1) {
