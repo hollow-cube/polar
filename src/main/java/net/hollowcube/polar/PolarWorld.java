@@ -83,6 +83,10 @@ public class PolarWorld {
         return userData;
     }
 
+    public void userData(byte @NotNull [] userData) {
+        this.userData = userData;
+    }
+
     public @Nullable PolarChunk chunkAt(int x, int z) {
         return chunks.getOrDefault(ChunkUtils.getChunkIndex(x, z), null);
     }
