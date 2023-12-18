@@ -233,6 +233,7 @@ public class PolarLoader implements IChunkLoader {
 
     @Override
     public @NotNull CompletableFuture<Void> saveInstance(@NotNull Instance instance) {
+        worldData.userData(NetworkBuffer.makeArray(b -> worldAccess.saveWorldData(instance, b)));
         return saveChunks(instance.getChunks());
     }
 
