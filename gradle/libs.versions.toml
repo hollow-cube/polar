@@ -2,7 +2,7 @@ metadata.format.version = "1.1"
 
 [versions]
 minestom = "9f3ee89506"
-minestomSnapshot = "1_20_2-909719b369"
+minestomSnapshot = "1_20_4-2e8a2863a3"
 zstd = "1.5.5-3"
 fastutil = "8.5.12"
 
