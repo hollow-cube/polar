@@ -2,6 +2,7 @@ package net.hollowcube.polar;
 
 import com.github.luben.zstd.Zstd;
 import net.minestom.server.network.NetworkBuffer;
+import net.minestom.server.utils.NamespaceID;
 import net.minestom.server.utils.chunk.ChunkUtils;
 import net.minestom.server.utils.validate.Check;
 import org.jetbrains.annotations.Contract;
@@ -89,6 +90,12 @@ public class PolarReader {
         if (buffer.read(BOOLEAN)) return new PolarSection();
 
         var blockPalette = buffer.readCollection(STRING).toArray(String[]::new);
+        if (version <= PolarWorld.VERSION_SHORT_GRASS) {
+            for (int i = 0; i < blockPalette.length; i++) {
+                if (NamespaceID.from(blockPalette[i]).path().equals("grass"))
+                    blockPalette[i] = "short_grass";
+            }
+        }
         int[] blockData = null;
         if (blockPalette.length > 1) {
             blockData = new int[PolarSection.BLOCK_PALETTE_SIZE];
