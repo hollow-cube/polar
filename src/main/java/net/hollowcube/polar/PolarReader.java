@@ -139,7 +139,7 @@ public class PolarReader {
             if (version <= PolarWorld.VERSION_MINESTOM_NBT_READ_BREAK) {
                 nbt = (NBTCompound) legacyReadNBT(buffer);
             } else {
-                buffer.read(NBT);
+                nbt = (NBTCompound) buffer.read(NBT);
             }
         }
 
