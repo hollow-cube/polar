@@ -339,11 +339,9 @@ public class PolarLoader implements IChunkLoader {
                 });
 
                 byte[] blockLight = section.blockLight().array();
+                if (blockLight.length != 2048) blockLight = null;
                 byte[] skyLight = section.skyLight().array();
-                if (blockLight.length != 2048 || skyLight.length != 2048) {
-                    blockLight = null;
-                    skyLight = null;
-                }
+                if (skyLight.length != 2048) skyLight = null;
 
                 sections[i] = new PolarSection(
                         blockPalette.toArray(new String[0]), blockData,
