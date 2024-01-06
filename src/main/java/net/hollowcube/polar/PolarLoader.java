@@ -48,6 +48,7 @@ public class PolarLoader implements IChunkLoader {
 
     private PolarWorldAccess worldAccess = PolarWorldAccess.DEFAULT;
     private boolean parallel = false;
+    private boolean loadLighting = true;
 
     public PolarLoader(@NotNull Path path) throws IOException {
         this.savePath = path;
@@ -93,6 +94,12 @@ public class PolarLoader implements IChunkLoader {
     @Contract("_ -> this")
     public @NotNull PolarLoader setParallel(boolean parallel) {
         this.parallel = parallel;
+        return this;
+    }
+
+    @Contract("_ -> this")
+    public @NotNull PolarLoader setLoadLighting(boolean loadLighting) {
+        this.loadLighting = loadLighting;
         return this;
     }
 
@@ -205,9 +212,9 @@ public class PolarLoader implements IChunkLoader {
         }
 
         // Light
-        if (sectionData.hasBlockLightData())
+        if (loadLighting && sectionData.hasBlockLightData())
             section.setBlockLight(sectionData.blockLight());
-        if (sectionData.hasSkyLightData())
+        if (loadLighting && sectionData.hasSkyLightData())
             section.setSkyLight(sectionData.skyLight());
     }
 
