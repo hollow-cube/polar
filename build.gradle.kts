@@ -16,7 +16,7 @@ repositories {
 }
 
 dependencies {
-    val minestom = libs.minestomSnapshot
+    val minestom = libs.minestom
 
     compileOnly(minestom)
     implementation(libs.zstd)

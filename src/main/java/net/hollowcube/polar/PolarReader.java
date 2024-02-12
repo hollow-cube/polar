@@ -19,6 +19,8 @@ import static net.minestom.server.network.NetworkBuffer.*;
 
 @SuppressWarnings("UnstableApiUsage")
 public class PolarReader {
+    private static final boolean FORCE_LEGACY_NBT = Boolean.getBoolean("polar.debug.force-legacy-nbt");
+
     private PolarReader() {}
 
     public static @NotNull PolarWorld read(byte @NotNull [] data) {
@@ -136,7 +138,7 @@ public class PolarReader {
 
         NBTCompound nbt = null;
         if (version <= PolarWorld.VERSION_USERDATA_OPT_BLOCK_ENT_NBT || buffer.read(BOOLEAN)) {
-            if (version <= PolarWorld.VERSION_MINESTOM_NBT_READ_BREAK) {
+            if (version <= PolarWorld.VERSION_MINESTOM_NBT_READ_BREAK || FORCE_LEGACY_NBT) {
                 nbt = (NBTCompound) legacyReadNBT(buffer);
             } else {
                 nbt = (NBTCompound) buffer.read(NBT);

@@ -1,16 +1,14 @@
 metadata.format.version = "1.1"
 
 [versions]
-minestom = "9f3ee89506"
-minestomSnapshot = "1_20_4-615248dc5b"
+minestom = "7320437640"
 zstd = "1.5.5-3"
 fastutil = "8.5.12"
 
 nexuspublish = "1.3.0"
 
 [libraries]
-minestom = { group = "dev.hollowcube", name = "minestom-ce", version.ref = "minestom" }
-minestomSnapshot = { group = "dev.hollowcube", name = "minestom-ce-snapshots", version.ref = "minestomSnapshot" }
+minestom = { group = "net.minestom", name = "minestom-snapshots", version.ref = "minestom" }
 zstd = { group = "com.github.luben", name = "zstd-jni", version.ref = "zstd" }
 fastutil = { group = "it.unimi.dsi", name = "fastutil", version.ref = "fastutil" }
 
