@@ -6,7 +6,7 @@ import net.minestom.server.instance.Instance;
 import net.minestom.server.network.NetworkBuffer;
 import net.minestom.server.utils.NamespaceID;
 import net.minestom.server.world.biomes.Biome;
-import net.minestom.server.world.biomes.BiomeManager;
+import net.minestom.server.world.biomes.VanillaBiome;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -75,7 +75,7 @@ public interface PolarWorldAccess {
         var biome = MinecraftServer.getBiomeManager().getByName(NamespaceID.from(name));
         if (biome == null) {
             PolarLoader.logger.error("Failed to find biome: {}", name);
-            biome = Biome.PLAINS;
+            biome = VanillaBiome.PLAINS;
         }
         return biome;
     }
@@ -84,9 +84,9 @@ public interface PolarWorldAccess {
         var biome = MinecraftServer.getBiomeManager().getById(id);
         if (biome == null) {
             PolarLoader.logger.error("Failed to find biome: {}", id);
-            biome = Biome.PLAINS;
+            biome = VanillaBiome.PLAINS;
         }
-        return biome.name().asString();
+        return biome.name();
     }
 
 }
