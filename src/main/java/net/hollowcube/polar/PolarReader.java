@@ -4,11 +4,9 @@ import com.github.luben.zstd.Zstd;
 import net.minestom.server.network.NetworkBuffer;
 import net.minestom.server.utils.NamespaceID;
 import net.minestom.server.utils.chunk.ChunkUtils;
-import net.minestom.server.utils.validate.Check;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jglrxavpok.hephaistos.nbt.CompressedProcesser;
-import org.jglrxavpok.hephaistos.nbt.NBT;
 import org.jglrxavpok.hephaistos.nbt.NBTCompound;
 import org.jglrxavpok.hephaistos.nbt.NBTReader;
 
@@ -20,6 +18,10 @@ import static net.minestom.server.network.NetworkBuffer.*;
 @SuppressWarnings("UnstableApiUsage")
 public class PolarReader {
     private static final boolean FORCE_LEGACY_NBT = Boolean.getBoolean("polar.debug.force-legacy-nbt");
+    private static final int MAX_BLOCK_ENTITIES = Integer.MAX_VALUE;
+    private static final int MAX_CHUNKS = Integer.MAX_VALUE;
+    private static final int MAX_BLOCK_PALETTE_SIZE = 16*16*16;
+    private static final int MAX_BIOME_PALETTE_SIZE = 8*8*8;
 
     private PolarReader() {}
 
@@ -48,7 +50,7 @@ public class PolarReader {
         if (version > PolarWorld.VERSION_WORLD_USERDATA)
             userData = buffer.read(BYTE_ARRAY);
 
-        var chunks = buffer.readCollection(b -> readChunk(version, b, maxSection - minSection + 1));
+        var chunks = buffer.readCollection(b -> readChunk(version, b, maxSection - minSection + 1), MAX_CHUNKS);
 
         return new PolarWorld(version, compression, minSection, maxSection, userData, chunks);
     }
@@ -62,7 +64,7 @@ public class PolarReader {
             sections[i] = readSection(version, buffer);
         }
 
-        var blockEntities = buffer.readCollection(b -> readBlockEntity(version, b));
+        var blockEntities = buffer.readCollection(b -> readBlockEntity(version, b), MAX_BLOCK_ENTITIES);
 
         var heightmaps = new byte[PolarChunk.HEIGHTMAP_BYTE_SIZE][PolarChunk.HEIGHTMAPS.length];
         int heightmapMask = buffer.read(INT);
@@ -91,7 +93,7 @@ public class PolarReader {
         // If section is empty exit immediately
         if (buffer.read(BOOLEAN)) return new PolarSection();
 
-        var blockPalette = buffer.readCollection(STRING).toArray(String[]::new);
+        var blockPalette = buffer.readCollection(STRING, MAX_BLOCK_PALETTE_SIZE).toArray(String[]::new);
         if (version <= PolarWorld.VERSION_SHORT_GRASS) {
             for (int i = 0; i < blockPalette.length; i++) {
                 String strippedID = blockPalette[i].split("\\[")[0];
@@ -108,7 +110,7 @@ public class PolarReader {
             PaletteUtil.unpack(blockData, rawBlockData, bitsPerEntry);
         }
 
-        var biomePalette = buffer.readCollection(STRING).toArray(String[]::new);
+        var biomePalette = buffer.readCollection(STRING, MAX_BIOME_PALETTE_SIZE).toArray(String[]::new);
         int[] biomeData = null;
         if (biomePalette.length > 1) {
             biomeData = new int[PolarSection.BIOME_PALETTE_SIZE];
