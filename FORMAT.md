@@ -18,6 +18,7 @@ The polar format resembles the anvil format in many ways, though it is binary, n
 |------------------|--------------|------------------------------------------|
 | Min Section      | byte         | For example, -4 in a vanilla world       |
 | Max Section      | byte         | For example, 19 in a vanilla world       |
+| User data        | array[byte]  | Arbitrary user data segment              |
 | Number of Chunks | varint       | Number of entries in the following array |
 | Chunks           | array[chunk] | Chunk data                               |
 
@@ -35,7 +36,7 @@ Entities or some other extra data field needs to be added to chunks in the futur
 | Heightmap Mask           | int                 | A mask indicating which heightmaps are present. See `AnvilChunk` for flag constants. |
 | Heightmaps               | array[bytes]        | One heightmap for each bit present in Heightmap Mask                                 |
 | Length of user data      | varint              | Number of entries in the following array                                             |
-| User data                | array[byte]         |                                                                                      |
+| User data                | array[byte]         | Arbitrary user data segment                                                          |
 
 ### Sections
 
