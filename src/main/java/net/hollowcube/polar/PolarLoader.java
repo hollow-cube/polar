@@ -2,7 +2,6 @@ package net.hollowcube.polar;
 
 import it.unimi.dsi.fastutil.shorts.Short2ObjectMap;
 import it.unimi.dsi.fastutil.shorts.Short2ObjectOpenHashMap;
-import net.hollowcube.polar.compat.ChunkSupplierShim;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.command.builder.arguments.minecraft.ArgumentBlockState;
 import net.minestom.server.command.builder.exception.ArgumentSyntaxException;
@@ -38,9 +37,6 @@ public class PolarLoader implements IChunkLoader {
     private static final BiomeManager BIOME_MANAGER = MinecraftServer.getBiomeManager();
     private static final ExceptionManager EXCEPTION_HANDLER = MinecraftServer.getExceptionManager();
     static final Logger logger = LoggerFactory.getLogger(PolarLoader.class);
-
-    // Account for changes between main Minestom and minestom-ce.
-    private static final ChunkSupplierShim CHUNK_SUPPLIER = ChunkSupplierShim.select();
 
     private static final int PLAINS_BIOME_ID = BIOME_MANAGER.getId(VanillaBiome.PLAINS);
 
@@ -138,7 +134,7 @@ public class PolarLoader implements IChunkLoader {
         // here it can be ignored/assumed.
 
         // Load the chunk
-        var chunk = CHUNK_SUPPLIER.createChunk(instance, chunkX, chunkZ);
+        var chunk = instance.getChunkSupplier().createChunk(instance, chunkX, chunkZ);
         synchronized (chunk) {
             //todo replace with java locks, not synchronized
             //   actually on second thought, do we really even need to lock the chunk? it is a local variable still
