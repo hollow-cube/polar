@@ -61,7 +61,8 @@ public class PolarWriter {
             for (int i = 0; i < PolarChunk.MAX_HEIGHTMAPS; i++) {
                 var heightmap = chunk.heightmap(i);
                 if (heightmap == null) continue;
-                buffer.write(LONG_ARRAY, PaletteUtil.pack(heightmap, bitsPerEntry));
+                if (heightmap.length == 0) buffer.write(LONG_ARRAY, new long[0]);
+                else buffer.write(LONG_ARRAY, PaletteUtil.pack(heightmap, bitsPerEntry));
             }
         }
 

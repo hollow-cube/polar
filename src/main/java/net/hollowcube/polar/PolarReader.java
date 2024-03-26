@@ -74,9 +74,13 @@ public class PolarReader {
                 continue;
 
             var packed = buffer.read(LONG_ARRAY);
-            var bitsPerEntry = packed.length * 64 / PolarChunk.HEIGHTMAP_SIZE;
-            heightmaps[i] = new int[PolarChunk.HEIGHTMAP_SIZE];
-            PaletteUtil.unpack(heightmaps[i], packed, bitsPerEntry);
+            if (packed.length == 0) {
+                heightmaps[i] = new int[0];
+            } else {
+                var bitsPerEntry = packed.length * 64 / PolarChunk.HEIGHTMAP_SIZE;
+                heightmaps[i] = new int[PolarChunk.HEIGHTMAP_SIZE];
+                PaletteUtil.unpack(heightmaps[i], packed, bitsPerEntry);
+            }
         }
 
         // Objects
