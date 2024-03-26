@@ -1,6 +1,7 @@
 package net.hollowcube.polar;
 
 import com.github.luben.zstd.Zstd;
+import net.minestom.server.instance.Chunk;
 import net.minestom.server.network.NetworkBuffer;
 import net.minestom.server.utils.NamespaceID;
 import net.minestom.server.utils.chunk.ChunkUtils;
@@ -66,13 +67,16 @@ public class PolarReader {
 
         var blockEntities = buffer.readCollection(b -> readBlockEntity(version, b), MAX_BLOCK_ENTITIES);
 
-        var heightmaps = new byte[PolarChunk.HEIGHTMAP_BYTE_SIZE][PolarChunk.HEIGHTMAPS.length];
+        var heightmaps = new int[PolarChunk.MAX_HEIGHTMAPS][];
         int heightmapMask = buffer.read(INT);
-        for (int i = 0; i < PolarChunk.HEIGHTMAPS.length; i++) {
-            if ((heightmapMask & PolarChunk.HEIGHTMAPS[i]) == 0)
+        for (int i = 0; i < PolarChunk.MAX_HEIGHTMAPS; i++) {
+            if ((heightmapMask & (1 << i)) == 0)
                 continue;
 
-            heightmaps[i] = buffer.readBytes(32);
+            var packed = buffer.read(LONG_ARRAY);
+            var bitsPerEntry = packed.length * 64 / PolarChunk.HEIGHTMAP_SIZE;
+            heightmaps[i] = new int[PolarChunk.HEIGHTMAP_SIZE];
+            PaletteUtil.unpack(heightmaps[i], packed, bitsPerEntry);
         }
 
         // Objects

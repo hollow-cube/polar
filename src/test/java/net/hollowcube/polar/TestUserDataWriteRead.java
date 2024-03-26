@@ -25,7 +25,9 @@ class TestUserDataWriteRead {
 
         var emptySections = new PolarSection[24];
         Arrays.fill(emptySections, new PolarSection());
-        world.updateChunkAt(0, 0, new PolarChunk(0, 0, emptySections, List.of(), new byte[0][0], new byte[0]));
+
+        var heightmaps = new int[PolarChunk.MAX_HEIGHTMAPS][];
+        world.updateChunkAt(0, 0, new PolarChunk(0, 0, emptySections, List.of(), heightmaps, new byte[0]));
 
         var wa = new UpdateTimeWorldAccess();
         var loader = new PolarLoader(world).setWorldAccess(wa);

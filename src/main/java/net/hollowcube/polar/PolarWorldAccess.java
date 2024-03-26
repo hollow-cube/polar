@@ -7,6 +7,7 @@ import net.minestom.server.network.NetworkBuffer;
 import net.minestom.server.utils.NamespaceID;
 import net.minestom.server.world.biomes.Biome;
 import net.minestom.server.world.biomes.VanillaBiome;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -60,6 +61,12 @@ public interface PolarWorldAccess {
      * @param userData A buffer to write user data to save
      */
     default void saveChunkData(@NotNull Chunk chunk, @NotNull NetworkBuffer userData) {}
+
+    @ApiStatus.Experimental
+    default void loadHeightmaps(@NotNull Chunk chunk, int[][] heightmaps) {}
+
+    @ApiStatus.Experimental
+    default void saveHeightmaps(@NotNull Chunk chunk, int[][] heightmaps) {}
 
     /**
      * Called when a chunk is being loaded by a {@link PolarLoader} to convert biome ids back to instances.
