@@ -1,7 +1,14 @@
 package net.hollowcube.polar;
 
+import net.minestom.server.utils.validate.Check;
+
 final class PaletteUtil {
     private PaletteUtil() {}
+
+    public static int bitsToRepresent(int n) {
+        Check.argCondition(n < 1, "n must be greater than 0");
+        return Integer.SIZE - Integer.numberOfLeadingZeros(n);
+    }
 
     public static long[] pack(int[] ints, int bitsPerEntry) {
         int intsPerLong = (int) Math.floor(64d / bitsPerEntry);

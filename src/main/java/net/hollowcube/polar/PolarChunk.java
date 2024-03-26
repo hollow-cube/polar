@@ -1,6 +1,7 @@
 package net.hollowcube.polar;
 
 
+import net.minestom.server.instance.Chunk;
 import org.jetbrains.annotations.Nullable;
 import org.jglrxavpok.hephaistos.nbt.NBTCompound;
 
@@ -14,7 +15,7 @@ public record PolarChunk(
         int z,
         PolarSection[] sections,
         List<BlockEntity> blockEntities,
-        byte[][] heightmaps,
+        int[][] heightmaps,
         byte[] userData
 ) {
 
@@ -34,9 +35,10 @@ public record PolarChunk(
             HEIGHTMAP_WORLD_SURFACE,
             HEIGHTMAP_WORLD_SURFACE_WG,
     };
-    static final int HEIGHTMAP_BYTE_SIZE = 32;
+    static final int HEIGHTMAP_SIZE = Chunk.CHUNK_SIZE_X * Chunk.CHUNK_SIZE_Z;
+    static final int MAX_HEIGHTMAPS = 32;
 
-    public byte @Nullable [] heightmap(int type) {
+    public int @Nullable [] heightmap(int type) {
         return heightmaps[type];
     }
 

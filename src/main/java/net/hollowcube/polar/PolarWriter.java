@@ -1,6 +1,7 @@
 package net.hollowcube.polar;
 
 import com.github.luben.zstd.Zstd;
+import net.minestom.server.instance.Chunk;
 import net.minestom.server.network.NetworkBuffer;
 import net.minestom.server.utils.chunk.ChunkUtils;
 import org.jetbrains.annotations.NotNull;
@@ -19,7 +20,7 @@ public class PolarWriter {
         content.write(BYTE, world.minSection());
         content.write(BYTE, world.maxSection());
         content.write(BYTE_ARRAY, world.userData());
-        content.writeCollection(world.chunks(), PolarWriter::writeChunk);
+        content.writeCollection(world.chunks(), (b , c) -> writeChunk(b, c, world.maxSection() - world.minSection() + 1));
 
         // Create final buffer
         return NetworkBuffer.makeArray(buffer -> {
@@ -39,7 +40,7 @@ public class PolarWriter {
         });
     }
 
-    private static void writeChunk(@NotNull NetworkBuffer buffer, @NotNull PolarChunk chunk) {
+    private static void writeChunk(@NotNull NetworkBuffer buffer, @NotNull PolarChunk chunk, int sectionCount) {
         buffer.write(VAR_INT, chunk.x());
         buffer.write(VAR_INT, chunk.z());
 
@@ -48,8 +49,21 @@ public class PolarWriter {
         }
         buffer.writeCollection(chunk.blockEntities(), PolarWriter::writeBlockEntity);
 
-        //todo heightmaps
-        buffer.write(INT, PolarChunk.HEIGHTMAP_NONE);
+        {
+            int heightmapBits = 0;
+            for (int i = 0; i < PolarChunk.MAX_HEIGHTMAPS; i++) {
+                if (chunk.heightmap(i) != null)
+                    heightmapBits |= 1 << i;
+            }
+            buffer.write(INT, heightmapBits);
+
+            int bitsPerEntry = PaletteUtil.bitsToRepresent(sectionCount * Chunk.CHUNK_SECTION_SIZE);
+            for (int i = 0; i < PolarChunk.MAX_HEIGHTMAPS; i++) {
+                var heightmap = chunk.heightmap(i);
+                if (heightmap == null) continue;
+                buffer.write(LONG_ARRAY, PaletteUtil.pack(heightmap, bitsPerEntry));
+            }
+        }
 
         buffer.write(BYTE_ARRAY, chunk.userData());
     }

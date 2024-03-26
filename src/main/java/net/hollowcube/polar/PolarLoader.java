@@ -154,6 +154,8 @@ public class PolarLoader implements IChunkLoader {
                 loadBlockEntity(blockEntity, chunk);
             }
 
+            worldAccess.loadHeightmaps(chunk, chunkData.heightmaps());
+
             var userData = chunkData.userData();
             if (userData.length > 0) {
                 worldAccess.loadChunkData(chunk, new NetworkBuffer(ByteBuffer.wrap(userData)));
@@ -286,7 +288,7 @@ public class PolarLoader implements IChunkLoader {
         var sections = new PolarSection[dimension.getHeight() / Chunk.CHUNK_SECTION_SIZE];
         assert sections.length == chunk.getSections().size(): "World height mismatch";
 
-        var heightmaps = new byte[32][PolarChunk.HEIGHTMAPS.length];
+        var heightmaps = new int[PolarChunk.MAX_HEIGHTMAPS][];
 
         var userData = new byte[0];
 
@@ -365,11 +367,9 @@ public class PolarLoader implements IChunkLoader {
                 );
             }
 
-            //todo heightmaps
+            worldAccess.saveHeightmaps(chunk, heightmaps);
 
-            if (worldAccess != null)
-                userData = NetworkBuffer.makeArray(b -> worldAccess.saveChunkData(chunk, b));
-
+            userData = NetworkBuffer.makeArray(b -> worldAccess.saveChunkData(chunk, b));
         }
 
         worldDataLock.writeLock().lock();

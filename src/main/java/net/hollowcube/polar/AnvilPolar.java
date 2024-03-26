@@ -235,12 +235,9 @@ public class AnvilPolar {
                     if (blockEntity != null) blockEntities.add(blockEntity);
                 }
 
-                var heightmaps = new byte[PolarChunk.HEIGHTMAP_BYTE_SIZE][PolarChunk.HEIGHTMAPS.length];
+                var heightmaps = new int[PolarChunk.MAX_HEIGHTMAPS][];
                 chunkData.getCompound("Heightmaps");
                 //todo: heightmaps
-//                MOTION_BLOCKING MOTION_BLOCKING_NO_LEAVES
-//                OCEAN_FLOOR OCEAN_FLOOR_WG
-//                WORLD_SURFACE WORLD_SURFACE_WG
 
                 var userData = new byte[0];
 
