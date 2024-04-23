@@ -1,17 +1,14 @@
 package net.hollowcube.polar;
 
 import com.github.luben.zstd.Zstd;
-import net.minestom.server.instance.Chunk;
+import net.kyori.adventure.nbt.BinaryTag;
+import net.kyori.adventure.nbt.CompoundBinaryTag;
 import net.minestom.server.network.NetworkBuffer;
 import net.minestom.server.utils.NamespaceID;
 import net.minestom.server.utils.chunk.ChunkUtils;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-import org.jglrxavpok.hephaistos.nbt.CompressedProcesser;
-import org.jglrxavpok.hephaistos.nbt.NBTCompound;
-import org.jglrxavpok.hephaistos.nbt.NBTReader;
 
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 import static net.minestom.server.network.NetworkBuffer.*;
@@ -21,10 +18,11 @@ public class PolarReader {
     private static final boolean FORCE_LEGACY_NBT = Boolean.getBoolean("polar.debug.force-legacy-nbt");
     private static final int MAX_BLOCK_ENTITIES = Integer.MAX_VALUE;
     private static final int MAX_CHUNKS = Integer.MAX_VALUE;
-    private static final int MAX_BLOCK_PALETTE_SIZE = 16*16*16;
-    private static final int MAX_BIOME_PALETTE_SIZE = 8*8*8;
+    private static final int MAX_BLOCK_PALETTE_SIZE = 16 * 16 * 16;
+    private static final int MAX_BIOME_PALETTE_SIZE = 8 * 8 * 8;
 
-    private PolarReader() {}
+    private PolarReader() {
+    }
 
     public static @NotNull PolarWorld read(byte @NotNull [] data) {
         var buffer = new NetworkBuffer(ByteBuffer.wrap(data));
@@ -147,12 +145,12 @@ public class PolarReader {
         int posIndex = buffer.read(INT);
         var id = buffer.readOptional(STRING);
 
-        NBTCompound nbt = null;
+        CompoundBinaryTag nbt = null;
         if (version <= PolarWorld.VERSION_USERDATA_OPT_BLOCK_ENT_NBT || buffer.read(BOOLEAN)) {
             if (version <= PolarWorld.VERSION_MINESTOM_NBT_READ_BREAK || FORCE_LEGACY_NBT) {
-                nbt = (NBTCompound) legacyReadNBT(buffer);
+                nbt = (CompoundBinaryTag) legacyReadNBT(buffer);
             } else {
-                nbt = (NBTCompound) buffer.read(NBT);
+                nbt = (CompoundBinaryTag) buffer.read(NBT);
             }
         }
 
@@ -188,23 +186,24 @@ public class PolarReader {
      *
      * @see NetworkBuffer#NBT
      */
-    private static org.jglrxavpok.hephaistos.nbt.NBT legacyReadNBT(@NotNull NetworkBuffer buffer) {
-        try {
-            var nbtReader = new NBTReader(new InputStream() {
-                @Override
-                public int read() {
-                    return buffer.read(BYTE) & 0xFF;
-                }
-                @Override
-                public int available() {
-                    return buffer.readableBytes();
-                }
-            }, CompressedProcesser.NONE);
-
-            return nbtReader.read();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+    private static BinaryTag legacyReadNBT(@NotNull NetworkBuffer buffer) {
+//        try {
+//            var nbtReader = new NBTReader(new InputStream() {
+//                @Override
+//                public int read() {
+//                    return buffer.read(BYTE) & 0xFF;
+//                }
+//                @Override
+//                public int available() {
+//                    return buffer.readableBytes();
+//                }
+//            }, CompressedProcesser.NONE);
+//
+//            return nbtReader.read();
+//        } catch (Exception e) {
+//            throw new RuntimeException(e);
+//        }
+        throw new UnsupportedOperationException("todo");
     }
 
     @Contract("false, _ -> fail")
