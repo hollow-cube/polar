@@ -1,9 +1,9 @@
 package net.hollowcube.polar;
 
 
+import net.kyori.adventure.nbt.CompoundBinaryTag;
 import net.minestom.server.instance.Chunk;
 import org.jetbrains.annotations.Nullable;
-import org.jglrxavpok.hephaistos.nbt.NBTCompound;
 
 import java.util.List;
 
@@ -47,7 +47,7 @@ public record PolarChunk(
             int y,
             int z,
             @Nullable String id,
-            @Nullable NBTCompound data
+            @Nullable CompoundBinaryTag data
     ) {
 
     }
