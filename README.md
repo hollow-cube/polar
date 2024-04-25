@@ -49,7 +49,8 @@ instance.saveChunksToStorage();
 
 Anvil conversion utilities are also included, and can be used something like the following.
 
-> Note: Anvil conversion is only guaranteed to work on recent (1.19+) worlds.
+> Note: Anvil conversion is only guaranteed to work on the latest version worlds. Try loading and saving the world in a
+> vanilla client or server if it doesnt work!
 
 ```
 var polarWorld = AnvilPolar.anvilToPolar(Path.of("/path/to/anvil/world/dir"));
@@ -93,7 +94,7 @@ public class UpdateTimeWorldAccess implements PolarWorldAccess {
 }
 ```
 
-Using a `PolarWorldAccess` implementation is as simple as attaching it to the `PolarLoader`: 
+Using a `PolarWorldAccess` implementation is as simple as attaching it to the `PolarLoader`:
 `new PolarLoader(world).setWorldAccess(new UpdateTimeWorldAccess())`
 
 ## Comparison to others
