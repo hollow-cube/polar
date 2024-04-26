@@ -12,20 +12,26 @@ import static net.minestom.server.network.NetworkBuffer.*;
 
 @SuppressWarnings("UnstableApiUsage")
 public class PolarWriter {
-    private PolarWriter() {}
+    private PolarWriter() {
+    }
 
     public static byte[] write(@NotNull PolarWorld world) {
+        return write(world, PolarDataConverter.NOOP);
+    }
+
+    public static byte[] write(@NotNull PolarWorld world, @NotNull PolarDataConverter dataConverter) {
         // Write the compressed content first
         var content = new NetworkBuffer(ByteBuffer.allocate(1024));
         content.write(BYTE, world.minSection());
         content.write(BYTE, world.maxSection());
         content.write(BYTE_ARRAY, world.userData());
-        content.writeCollection(world.chunks(), (b , c) -> writeChunk(b, c, world.maxSection() - world.minSection() + 1));
+        content.writeCollection(world.chunks(), (b, c) -> writeChunk(b, c, world.maxSection() - world.minSection() + 1));
 
         // Create final buffer
         return NetworkBuffer.makeArray(buffer -> {
             buffer.write(INT, PolarWorld.MAGIC_NUMBER);
             buffer.write(SHORT, PolarWorld.LATEST_VERSION);
+            buffer.write(VAR_INT, dataConverter.dataVersion());
             buffer.write(BYTE, (byte) world.compression().ordinal());
             switch (world.compression()) {
                 case NONE -> {

@@ -25,6 +25,10 @@ public class PolarReader {
     }
 
     public static @NotNull PolarWorld read(byte @NotNull [] data) {
+        return read(data, PolarDataConverter.NOOP);
+    }
+
+    public static @NotNull PolarWorld read(byte @NotNull [] data, @NotNull PolarDataConverter dataConverter) {
         var buffer = new NetworkBuffer(ByteBuffer.wrap(data));
         buffer.writeIndex(data.length); // Set write index to end so readableBytes returns remaining bytes
 
@@ -33,6 +37,10 @@ public class PolarReader {
 
         short version = buffer.read(SHORT);
         validateVersion(version);
+
+        int dataVersion = version >= PolarWorld.VERSION_DATA_CONVERTER
+                ? buffer.read(VAR_INT)
+                : dataConverter.defaultDataVersion();
 
         var compression = PolarWorld.CompressionType.fromId(buffer.read(BYTE));
         assertThat(compression != null, "Invalid compression type");
@@ -49,21 +57,21 @@ public class PolarReader {
         if (version > PolarWorld.VERSION_WORLD_USERDATA)
             userData = buffer.read(BYTE_ARRAY);
 
-        var chunks = buffer.readCollection(b -> readChunk(version, b, maxSection - minSection + 1), MAX_CHUNKS);
+        var chunks = buffer.readCollection(b -> readChunk(dataConverter, version, dataVersion, b, maxSection - minSection + 1), MAX_CHUNKS);
 
-        return new PolarWorld(version, compression, minSection, maxSection, userData, chunks);
+        return new PolarWorld(version, dataVersion, compression, minSection, maxSection, userData, chunks);
     }
 
-    private static @NotNull PolarChunk readChunk(short version, @NotNull NetworkBuffer buffer, int sectionCount) {
+    private static @NotNull PolarChunk readChunk(@NotNull PolarDataConverter dataConverter, short version, int dataVersion, @NotNull NetworkBuffer buffer, int sectionCount) {
         var chunkX = buffer.read(VAR_INT);
         var chunkZ = buffer.read(VAR_INT);
 
         var sections = new PolarSection[sectionCount];
         for (int i = 0; i < sectionCount; i++) {
-            sections[i] = readSection(version, buffer);
+            sections[i] = readSection(dataConverter, version, dataVersion, buffer);
         }
 
-        var blockEntities = buffer.readCollection(b -> readBlockEntity(version, b), MAX_BLOCK_ENTITIES);
+        var blockEntities = buffer.readCollection(b -> readBlockEntity(dataConverter, version, dataVersion, b), MAX_BLOCK_ENTITIES);
 
         var heightmaps = new int[PolarChunk.MAX_HEIGHTMAPS][];
         int heightmapMask = buffer.read(INT);
@@ -95,11 +103,14 @@ public class PolarReader {
         );
     }
 
-    private static @NotNull PolarSection readSection(short version, @NotNull NetworkBuffer buffer) {
+    private static @NotNull PolarSection readSection(@NotNull PolarDataConverter dataConverter, short version, int dataVersion, @NotNull NetworkBuffer buffer) {
         // If section is empty exit immediately
         if (buffer.read(BOOLEAN)) return new PolarSection();
 
         var blockPalette = buffer.readCollection(STRING, MAX_BLOCK_PALETTE_SIZE).toArray(String[]::new);
+        if (dataVersion < dataConverter.dataVersion()) {
+            dataConverter.convertBlockPalette(blockPalette, dataVersion, dataConverter.dataVersion());
+        }
         if (version <= PolarWorld.VERSION_SHORT_GRASS) {
             for (int i = 0; i < blockPalette.length; i++) {
                 String strippedID = blockPalette[i].split("\\[")[0];
@@ -141,17 +152,25 @@ public class PolarReader {
         return new PolarSection(blockPalette, blockData, biomePalette, biomeData, blockLight, skyLight);
     }
 
-    private static @NotNull PolarChunk.BlockEntity readBlockEntity(int version, @NotNull NetworkBuffer buffer) {
+    private static @NotNull PolarChunk.BlockEntity readBlockEntity(@NotNull PolarDataConverter dataConverter, int version, int dataVersion, @NotNull NetworkBuffer buffer) {
         int posIndex = buffer.read(INT);
         var id = buffer.readOptional(STRING);
 
-        CompoundBinaryTag nbt = null;
+        CompoundBinaryTag nbt = CompoundBinaryTag.empty();
         if (version <= PolarWorld.VERSION_USERDATA_OPT_BLOCK_ENT_NBT || buffer.read(BOOLEAN)) {
             if (version <= PolarWorld.VERSION_MINESTOM_NBT_READ_BREAK || FORCE_LEGACY_NBT) {
                 nbt = (CompoundBinaryTag) legacyReadNBT(buffer);
             } else {
                 nbt = (CompoundBinaryTag) buffer.read(NBT);
             }
+        }
+
+        if (dataVersion < dataConverter.dataVersion()) {
+            var converted = dataConverter.convertBlockEntityData(id == null ? "" : id, nbt, dataVersion, dataConverter.dataVersion());
+            id = converted.getKey();
+            if (id.isEmpty()) id = null;
+            nbt = converted.getValue();
+            if (nbt.size() == 0) nbt = null;
         }
 
         return new PolarChunk.BlockEntity(

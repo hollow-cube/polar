@@ -1,5 +1,6 @@
 package net.hollowcube.polar;
 
+import net.minestom.server.MinecraftServer;
 import net.minestom.server.instance.Chunk;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.instance.InstanceContainer;
@@ -95,6 +96,7 @@ public class AnvilPolar {
 
         var world = new PolarWorld(
                 PolarWorld.LATEST_VERSION,
+                MinecraftServer.DATA_VERSION,
                 PolarWorld.DEFAULT_COMPRESSION,
                 (byte) minSection, (byte) maxSection,
                 new byte[0],
