@@ -6,11 +6,13 @@ import net.minestom.server.MinecraftServer;
 import net.minestom.server.command.builder.arguments.minecraft.ArgumentBlockState;
 import net.minestom.server.command.builder.exception.ArgumentSyntaxException;
 import net.minestom.server.exception.ExceptionManager;
-import net.minestom.server.instance.*;
+import net.minestom.server.instance.Chunk;
+import net.minestom.server.instance.IChunkLoader;
+import net.minestom.server.instance.Instance;
+import net.minestom.server.instance.Section;
 import net.minestom.server.instance.block.Block;
 import net.minestom.server.instance.block.BlockManager;
 import net.minestom.server.network.NetworkBuffer;
-import net.minestom.server.world.biomes.Biome;
 import net.minestom.server.world.biomes.BiomeManager;
 import net.minestom.server.world.biomes.VanillaBiome;
 import org.jetbrains.annotations.Contract;
@@ -25,7 +27,10 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinPool;
@@ -236,8 +241,9 @@ public class PolarLoader implements IChunkLoader {
             block = block.withHandler(BLOCK_MANAGER.getHandlerOrDummy(blockEntity.id()));
         if (blockEntity.data() != null)
             block = block.withNbt(blockEntity.data());
+        if (worldAccess != null)
 
-        chunk.setBlock(blockEntity.x(), blockEntity.y(), blockEntity.z(), block);
+            chunk.setBlock(blockEntity.x(), blockEntity.y(), blockEntity.z(), block);
     }
 
     // Unloading/saving
@@ -286,7 +292,7 @@ public class PolarLoader implements IChunkLoader {
 
         var blockEntities = new ArrayList<PolarChunk.BlockEntity>();
         var sections = new PolarSection[dimension.getHeight() / Chunk.CHUNK_SECTION_SIZE];
-        assert sections.length == chunk.getSections().size(): "World height mismatch";
+        assert sections.length == chunk.getSections().size() : "World height mismatch";
 
         var heightmaps = new int[PolarChunk.MAX_HEIGHTMAPS][];
 
