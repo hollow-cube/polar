@@ -6,9 +6,12 @@ import net.kyori.adventure.nbt.CompoundBinaryTag;
 import net.minestom.server.network.NetworkBuffer;
 import net.minestom.server.utils.NamespaceID;
 import net.minestom.server.utils.chunk.ChunkUtils;
+import net.minestom.server.utils.nbt.BinaryTagReader;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.DataInputStream;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 import static net.minestom.server.network.NetworkBuffer.*;
@@ -206,23 +209,20 @@ public class PolarReader {
      * @see NetworkBuffer#NBT
      */
     private static BinaryTag legacyReadNBT(@NotNull NetworkBuffer buffer) {
-//        try {
-//            var nbtReader = new NBTReader(new InputStream() {
-//                @Override
-//                public int read() {
-//                    return buffer.read(BYTE) & 0xFF;
-//                }
-//                @Override
-//                public int available() {
-//                    return buffer.readableBytes();
-//                }
-//            }, CompressedProcesser.NONE);
-//
-//            return nbtReader.read();
-//        } catch (Exception e) {
-//            throw new RuntimeException(e);
-//        }
-        throw new UnsupportedOperationException("todo");
+        try {
+            var nbtReader = new BinaryTagReader(new DataInputStream(new InputStream() {
+                public int read() {
+                    return buffer.read(NetworkBuffer.BYTE) & 255;
+                }
+
+                public int available() {
+                    return buffer.readableBytes();
+                }
+            }));
+            return nbtReader.readNamed().getValue();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Contract("false, _ -> fail")
