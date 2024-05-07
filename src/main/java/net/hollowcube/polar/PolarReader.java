@@ -116,9 +116,12 @@ public class PolarReader {
         }
         if (version <= PolarWorld.VERSION_SHORT_GRASS) {
             for (int i = 0; i < blockPalette.length; i++) {
-                String strippedID = blockPalette[i].split("\\[")[0];
-                if (NamespaceID.from(strippedID).path().equals("grass"))
-                    blockPalette[i] = "short_grass";
+                if (blockPalette[i].contains("grass")) {
+                    String strippedID = blockPalette[i].split("\\[")[0];
+                    if (NamespaceID.from(strippedID).path().equals("grass")) {
+                        blockPalette[i] = "short_grass";
+                    }
+                }
             }
         }
         int[] blockData = null;
