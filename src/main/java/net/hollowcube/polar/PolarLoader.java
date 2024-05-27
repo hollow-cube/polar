@@ -13,8 +13,8 @@ import net.minestom.server.instance.Section;
 import net.minestom.server.instance.block.Block;
 import net.minestom.server.instance.block.BlockManager;
 import net.minestom.server.network.NetworkBuffer;
-import net.minestom.server.world.biomes.BiomeManager;
-import net.minestom.server.world.biomes.VanillaBiome;
+import net.minestom.server.registry.DynamicRegistry;
+import net.minestom.server.world.biome.Biome;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -39,11 +39,11 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 @SuppressWarnings("UnstableApiUsage")
 public class PolarLoader implements IChunkLoader {
     private static final BlockManager BLOCK_MANAGER = MinecraftServer.getBlockManager();
-    private static final BiomeManager BIOME_MANAGER = MinecraftServer.getBiomeManager();
+    private static final DynamicRegistry<Biome> BIOME_REGISTRY = MinecraftServer.getBiomeRegistry();
     private static final ExceptionManager EXCEPTION_HANDLER = MinecraftServer.getExceptionManager();
     static final Logger logger = LoggerFactory.getLogger(PolarLoader.class);
 
-    private static final int PLAINS_BIOME_ID = BIOME_MANAGER.getId(VanillaBiome.PLAINS);
+    private static final int PLAINS_BIOME_ID = BIOME_REGISTRY.getId(Biome.PLAINS);
 
     private final Map<String, Integer> biomeReadCache = new ConcurrentHashMap<>();
     private final Map<Integer, String> biomeWriteCache = new ConcurrentHashMap<>();
@@ -200,7 +200,7 @@ public class PolarLoader implements IChunkLoader {
         var biomePalette = new int[rawBiomePalette.length];
         for (int i = 0; i < rawBiomePalette.length; i++) {
             biomePalette[i] = biomeReadCache.computeIfAbsent(rawBiomePalette[i], name -> {
-                var biomeId = BIOME_MANAGER.getId(worldAccess.getBiome(name));
+                var biomeId = BIOME_REGISTRY.getId(worldAccess.getBiome(name));
                 if (biomeId == -1) {
                     logger.error("Failed to find biome: {}", name);
                     biomeId = PLAINS_BIOME_ID;
@@ -288,10 +288,10 @@ public class PolarLoader implements IChunkLoader {
     }
 
     private void updateChunkData(@NotNull Short2ObjectMap<String> blockCache, @NotNull Chunk chunk) {
-        var dimension = chunk.getInstance().getDimensionType();
+        var dimension = chunk.getInstance().getCachedDimensionType();
 
         var blockEntities = new ArrayList<PolarChunk.BlockEntity>();
-        var sections = new PolarSection[dimension.getHeight() / Chunk.CHUNK_SECTION_SIZE];
+        var sections = new PolarSection[dimension.height() / Chunk.CHUNK_SECTION_SIZE];
         assert sections.length == chunk.getSections().size() : "World height mismatch";
 
         var heightmaps = new int[PolarChunk.MAX_HEIGHTMAPS][];
