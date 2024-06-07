@@ -316,7 +316,7 @@ public class PolarLoader implements IChunkLoader {
                         final int blockIndex = x + sectionLocalY * 16 * 16 + z * 16;
 
                         // Section palette
-                        var namespace = blockCache.computeIfAbsent((short) blockStateId, unused -> blockToString(Block.fromStateId((short) blockStateId)));
+                        var namespace = blockCache.computeIfAbsent((short) blockStateId, unused -> blockToString(Block.fromStateId(blockStateId)));
                         int paletteId = blockPalette.indexOf(namespace);
                         if (paletteId == -1) {
                             paletteId = blockPalette.size();
