@@ -10,8 +10,6 @@ import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Objects;
-
 /**
  * Provides access to user world data for a {@link PolarLoader} to get and set user
  * specific world data such as objects, as well as provides some relevant callbacks.
@@ -102,7 +100,7 @@ public interface PolarWorldAccess {
         var biome = biomeRegistry.getKey(id);
         if (biome == null) {
             PolarLoader.logger.error("Failed to find biome: {}", id);
-            return Objects.requireNonNull(biomeRegistry.get(Biome.PLAINS)).name();
+            return Biome.PLAINS.name();
         }
         return biome.name();
     }
