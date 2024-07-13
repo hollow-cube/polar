@@ -1,6 +1,7 @@
 package net.hollowcube.polar;
 
 import com.github.luben.zstd.Zstd;
+import net.hollowcube.polar.PolarSection.LightContent;
 import net.kyori.adventure.nbt.BinaryTag;
 import net.kyori.adventure.nbt.CompoundBinaryTag;
 import net.minestom.server.network.NetworkBuffer;
@@ -143,19 +144,32 @@ public class PolarReader {
             PaletteUtil.unpack(biomeData, rawBiomeData, bitsPerEntry);
         }
 
+        LightContent blockLightContent = LightContent.MISSING, skyLightContent = LightContent.MISSING;
         byte[] blockLight = null, skyLight = null;
-
         if (version > PolarWorld.VERSION_UNIFIED_LIGHT) {
-            if (buffer.read(BOOLEAN))
+            blockLightContent = version >= PolarWorld.VERSION_IMPROVED_LIGHT
+                    ? LightContent.VALUES[buffer.read(BYTE)]
+                    : (buffer.read(BOOLEAN) ? LightContent.PRESENT : LightContent.MISSING);
+            if (blockLightContent == LightContent.PRESENT)
                 blockLight = buffer.readBytes(2048);
-            if (buffer.read(BOOLEAN))
+            skyLightContent = version >= PolarWorld.VERSION_IMPROVED_LIGHT
+                    ? LightContent.VALUES[buffer.read(BYTE)]
+                    : (buffer.read(BOOLEAN) ? LightContent.PRESENT : LightContent.MISSING);
+            if (skyLightContent == LightContent.PRESENT)
                 skyLight = buffer.readBytes(2048);
         } else if (buffer.read(BOOLEAN)) {
+            blockLightContent = LightContent.PRESENT;
             blockLight = buffer.readBytes(2048);
+            skyLightContent = LightContent.PRESENT;
             skyLight = buffer.readBytes(2048);
         }
 
-        return new PolarSection(blockPalette, blockData, biomePalette, biomeData, blockLight, skyLight);
+        return new PolarSection(
+                blockPalette, blockData,
+                biomePalette, biomeData,
+                blockLightContent, blockLight,
+                skyLightContent, skyLight
+        );
     }
 
     private static @NotNull PolarChunk.BlockEntity readBlockEntity(@NotNull PolarDataConverter dataConverter, int version, int dataVersion, @NotNull NetworkBuffer buffer) {
