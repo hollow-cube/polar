@@ -242,7 +242,6 @@ public class PolarLoader implements IChunkLoader {
         if (blockEntity.data() != null)
             block = block.withNbt(blockEntity.data());
         if (worldAccess != null)
-
             chunk.setBlock(blockEntity.x(), blockEntity.y(), blockEntity.z(), block);
     }
 

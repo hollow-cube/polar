@@ -129,7 +129,7 @@ public class PolarReader {
             blockData = new int[PolarSection.BLOCK_PALETTE_SIZE];
 
             var rawBlockData = buffer.read(LONG_ARRAY);
-            var bitsPerEntry = rawBlockData.length * 64 / PolarSection.BLOCK_PALETTE_SIZE;
+            var bitsPerEntry = (int) Math.ceil(Math.log(blockPalette.length) / Math.log(2));
             PaletteUtil.unpack(blockData, rawBlockData, bitsPerEntry);
         }
 
@@ -139,7 +139,7 @@ public class PolarReader {
             biomeData = new int[PolarSection.BIOME_PALETTE_SIZE];
 
             var rawBiomeData = buffer.read(LONG_ARRAY);
-            var bitsPerEntry = rawBiomeData.length * 64 / PolarSection.BIOME_PALETTE_SIZE;
+            var bitsPerEntry = (int) Math.ceil(Math.log(biomePalette.length) / Math.log(2));
             PaletteUtil.unpack(biomeData, rawBiomeData, bitsPerEntry);
         }
 
