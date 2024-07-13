@@ -15,6 +15,12 @@ public class PolarSection {
     public static final int BLOCK_PALETTE_SIZE = 4096;
     public static final int BIOME_PALETTE_SIZE = 64;
 
+    public enum LightContent {
+        MISSING, EMPTY, FULL, PRESENT;
+
+        public static final LightContent[] VALUES = values();
+    }
+
     private final boolean empty;
 
     private final String @NotNull [] blockPalette;
@@ -23,8 +29,9 @@ public class PolarSection {
     private final String @NotNull [] biomePalette;
     private final int @Nullable [] biomeData;
 
-    // Both light arrays are present/missing together. you cannot have one without the other.
+    private final LightContent blockLightContent;
     private final byte @Nullable [] blockLight;
+    private final LightContent skyLightContent;
     private final byte @Nullable [] skyLight;
 
     public PolarSection() {
@@ -35,14 +42,17 @@ public class PolarSection {
         this.biomePalette = new String[]{"minecraft:plains"};
         this.biomeData = null;
 
+        this.blockLightContent = LightContent.MISSING;
         this.blockLight = null;
+        this.skyLightContent = LightContent.MISSING;
         this.skyLight = null;
     }
 
     public PolarSection(
             String @NotNull [] blockPalette, int @Nullable [] blockData,
             String @NotNull [] biomePalette, int @Nullable [] biomeData,
-            byte @Nullable [] blockLight, byte @Nullable [] skyLight
+            @NotNull LightContent blockLightContent, byte @Nullable [] blockLight,
+            @NotNull LightContent skyLightContent, byte @Nullable [] skyLight
     ) {
         this.empty = false;
 
@@ -51,7 +61,9 @@ public class PolarSection {
         this.biomePalette = biomePalette;
         this.biomeData = biomeData;
 
+        this.blockLightContent = blockLightContent;
         this.blockLight = blockLight;
+        this.skyLightContent = skyLightContent;
         this.skyLight = skyLight;
     }
 
@@ -85,17 +97,17 @@ public class PolarSection {
         return biomeData;
     }
 
-    public boolean hasBlockLightData() {
-        return blockLight != null;
-    }
-
-    public boolean hasSkyLightData() {
-        return skyLight != null;
+    public @NotNull LightContent blockLightContent() {
+        return blockLightContent;
     }
 
     public byte[] blockLight() {
         assert blockLight != null : "must check hasBlockLightData() before calling blockLight()";
         return blockLight;
+    }
+
+    public @NotNull LightContent skyLightContent() {
+        return skyLightContent;
     }
 
     public byte[] skyLight() {

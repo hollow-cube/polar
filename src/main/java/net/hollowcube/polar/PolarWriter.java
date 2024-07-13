@@ -30,7 +30,7 @@ public class PolarWriter {
         // Create final buffer
         return NetworkBuffer.makeArray(buffer -> {
             buffer.write(INT, PolarWorld.MAGIC_NUMBER);
-            buffer.write(SHORT, PolarWorld.LATEST_VERSION);
+            buffer.write(SHORT, PolarWorld.VERSION_IMPROVED_LIGHT);
             buffer.write(VAR_INT, dataConverter.dataVersion());
             buffer.write(BYTE, (byte) world.compression().ordinal());
             switch (world.compression()) {
@@ -100,11 +100,11 @@ public class PolarWriter {
         }
 
         // Light
-        buffer.write(BOOLEAN, section.hasBlockLightData());
-        if (section.hasBlockLightData())
+        buffer.write(BYTE, (byte) section.blockLightContent().ordinal());
+        if (section.blockLightContent() == PolarSection.LightContent.PRESENT)
             buffer.write(RAW_BYTES, section.blockLight());
-        buffer.write(BOOLEAN, section.hasSkyLightData());
-        if (section.hasSkyLightData())
+        buffer.write(BYTE, (byte) section.skyLightContent().ordinal());
+        if (section.skyLightContent() == PolarSection.LightContent.PRESENT)
             buffer.write(RAW_BYTES, section.skyLight());
     }
 

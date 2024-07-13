@@ -2,16 +2,15 @@ package net.hollowcube.polar;
 
 import it.unimi.dsi.fastutil.shorts.Short2ObjectMap;
 import it.unimi.dsi.fastutil.shorts.Short2ObjectOpenHashMap;
+import net.hollowcube.polar.PolarSection.LightContent;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.command.builder.arguments.minecraft.ArgumentBlockState;
 import net.minestom.server.command.builder.exception.ArgumentSyntaxException;
 import net.minestom.server.exception.ExceptionManager;
-import net.minestom.server.instance.Chunk;
-import net.minestom.server.instance.IChunkLoader;
-import net.minestom.server.instance.Instance;
-import net.minestom.server.instance.Section;
+import net.minestom.server.instance.*;
 import net.minestom.server.instance.block.Block;
 import net.minestom.server.instance.block.BlockManager;
+import net.minestom.server.instance.light.LightCompute;
 import net.minestom.server.network.NetworkBuffer;
 import net.minestom.server.registry.DynamicRegistry;
 import net.minestom.server.world.biome.Biome;
@@ -27,10 +26,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinPool;
@@ -227,10 +223,19 @@ public class PolarLoader implements IChunkLoader {
         }
 
         // Light
-        if (loadLighting && sectionData.hasBlockLightData())
-            section.setBlockLight(sectionData.blockLight());
-        if (loadLighting && sectionData.hasSkyLightData())
-            section.setSkyLight(sectionData.skyLight());
+        if (loadLighting && sectionData.blockLightContent() != LightContent.MISSING)
+            section.setBlockLight(getLightArray(sectionData.blockLightContent(), sectionData.blockLight()));
+        if (loadLighting && sectionData.skyLightContent() != LightContent.MISSING)
+            section.setSkyLight(getLightArray(sectionData.skyLightContent(), sectionData.skyLight()));
+    }
+
+    private byte[] getLightArray(@NotNull LightContent content, byte @Nullable [] data) {
+        return switch (content) {
+            case MISSING -> null;
+            case EMPTY -> LightCompute.emptyContent;
+            case FULL -> LightCompute.contentFullyLit;
+            case PRESENT -> data;
+        };
     }
 
     private void loadBlockEntity(@NotNull PolarChunk.BlockEntity blockEntity, @NotNull Chunk chunk) {
@@ -360,15 +365,17 @@ public class PolarLoader implements IChunkLoader {
                     biomeData[x + z * 4 + y * 4 * 4] = paletteId;
                 });
 
-                byte[] blockLight = section.blockLight().array();
-                if (blockLight.length != 2048) blockLight = null;
-                byte[] skyLight = section.skyLight().array();
-                if (skyLight.length != 2048) skyLight = null;
+                byte[] blockLight = null, skyLight = null;
+                if (chunk instanceof LightingChunk) {
+                    blockLight = section.blockLight().array();
+                    skyLight = section.skyLight().array();
+                }
 
                 sections[i] = new PolarSection(
                         blockPalette.toArray(new String[0]), blockData,
                         biomePalette.toArray(new String[0]), biomeData,
-                        blockLight, skyLight
+                        getLightContent(blockLight), blockLight,
+                        getLightContent(skyLight), skyLight
                 );
             }
 
@@ -391,6 +398,13 @@ public class PolarLoader implements IChunkLoader {
                 )
         );
         worldDataLock.writeLock().unlock();
+    }
+
+    private @NotNull LightContent getLightContent(byte @Nullable [] data) {
+        if (data == null) return LightContent.MISSING;
+        if (data.length == 0 || Arrays.equals(data, LightCompute.emptyContent)) return LightContent.EMPTY;
+        if (Arrays.equals(data, LightCompute.contentFullyLit)) return LightContent.FULL;
+        return LightContent.PRESENT;
     }
 
     @Override
