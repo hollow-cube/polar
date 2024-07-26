@@ -113,7 +113,11 @@ public class PolarWorld {
 
     public enum CompressionType {
         NONE,
-        ZSTD;
+        ZSTD,
+        LZ4_FAST,
+        LZ4_SAFE,
+        LZ4_HIGH_FAST,
+        LZ4_HIGH_SAFE;
 
         private static final CompressionType[] VALUES = values();
 

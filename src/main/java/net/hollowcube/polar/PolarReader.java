@@ -2,6 +2,7 @@ package net.hollowcube.polar;
 
 import com.github.luben.zstd.Zstd;
 import net.hollowcube.polar.PolarSection.LightContent;
+import net.jpountz.lz4.LZ4Factory;
 import net.kyori.adventure.nbt.BinaryTag;
 import net.kyori.adventure.nbt.CompoundBinaryTag;
 import net.minestom.server.network.NetworkBuffer;
@@ -212,6 +213,18 @@ public class PolarReader {
             case NONE -> buffer;
             case ZSTD -> {
                 var bytes = Zstd.decompress(buffer.readBytes(buffer.readableBytes()), length);
+                var newBuffer = new NetworkBuffer(ByteBuffer.wrap(bytes));
+                newBuffer.writeIndex(bytes.length);
+                yield newBuffer;
+            }
+            case LZ4_FAST, LZ4_HIGH_FAST -> {
+                var bytes = CompressFormats.LZ_4_FACTORY.fastDecompressor().decompress(buffer.readBytes(buffer.readableBytes()), length);
+                var newBuffer = new NetworkBuffer(ByteBuffer.wrap(bytes));
+                newBuffer.writeIndex(bytes.length);
+                yield newBuffer;
+            }
+            case LZ4_SAFE, LZ4_HIGH_SAFE -> {
+                var bytes = CompressFormats.LZ_4_FACTORY.safeDecompressor().decompress(buffer.readBytes(buffer.readableBytes()), length);
                 var newBuffer = new NetworkBuffer(ByteBuffer.wrap(bytes));
                 newBuffer.writeIndex(bytes.length);
                 yield newBuffer;
