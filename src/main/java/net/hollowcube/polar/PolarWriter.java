@@ -42,6 +42,10 @@ public class PolarWriter {
                     buffer.write(VAR_INT, content.readableBytes());
                     buffer.write(RAW_BYTES, Zstd.compress(content.readBytes(content.readableBytes())));
                 }
+                case LZ4_FAST, LZ4_SAFE ->
+                        buffer.write(RAW_BYTES, CompressFormats.LZ_4_FACTORY.fastCompressor().compress(content.readBytes(content.readableBytes())));
+                case LZ4_HIGH_FAST, LZ4_HIGH_SAFE ->
+                        buffer.write(RAW_BYTES, CompressFormats.LZ_4_FACTORY.highCompressor().compress(content.readBytes(content.readableBytes())));
             }
         });
     }

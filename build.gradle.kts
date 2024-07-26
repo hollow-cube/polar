@@ -21,6 +21,7 @@ dependencies {
 
     compileOnly(minestom)
     implementation(libs.zstd)
+    implementation(libs.lz4)
     // Fastutil is only included because minestom already uses it, otherwise it is a crazy dependency
     // for how it is used in this project.
     implementation(libs.fastutil)
