@@ -7,7 +7,10 @@ import net.minestom.server.MinecraftServer;
 import net.minestom.server.command.builder.arguments.minecraft.ArgumentBlockState;
 import net.minestom.server.command.builder.exception.ArgumentSyntaxException;
 import net.minestom.server.exception.ExceptionManager;
-import net.minestom.server.instance.*;
+import net.minestom.server.instance.Chunk;
+import net.minestom.server.instance.IChunkLoader;
+import net.minestom.server.instance.Instance;
+import net.minestom.server.instance.Section;
 import net.minestom.server.instance.block.Block;
 import net.minestom.server.instance.block.BlockManager;
 import net.minestom.server.instance.light.LightCompute;
@@ -365,12 +368,9 @@ public class PolarLoader implements IChunkLoader {
                     biomeData[x + z * 4 + y * 4 * 4] = paletteId;
                 });
 
-                byte[] blockLight = null, skyLight = null;
-                if (chunk instanceof LightingChunk) {
-                    blockLight = section.blockLight().array();
-                    skyLight = section.skyLight().array();
-                }
-
+                byte[] blockLight = section.blockLight().array();
+                byte[] skyLight = section.skyLight().array();
+                
                 sections[i] = new PolarSection(
                         blockPalette.toArray(new String[0]), blockData,
                         biomePalette.toArray(new String[0]), biomeData,
