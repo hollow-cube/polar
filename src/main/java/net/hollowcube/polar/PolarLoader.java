@@ -37,11 +37,10 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 @SuppressWarnings("UnstableApiUsage")
 public class PolarLoader implements IChunkLoader {
+    static final Logger logger = LoggerFactory.getLogger(PolarLoader.class);
     private static final BlockManager BLOCK_MANAGER = MinecraftServer.getBlockManager();
     private static final DynamicRegistry<Biome> BIOME_REGISTRY = MinecraftServer.getBiomeRegistry();
     private static final ExceptionManager EXCEPTION_HANDLER = MinecraftServer.getExceptionManager();
-    static final Logger logger = LoggerFactory.getLogger(PolarLoader.class);
-
     private static final int PLAINS_BIOME_ID = BIOME_REGISTRY.getId(Biome.PLAINS);
 
     private final Map<String, Integer> biomeReadCache = new ConcurrentHashMap<>();
@@ -235,8 +234,8 @@ public class PolarLoader implements IChunkLoader {
     private byte[] getLightArray(@NotNull LightContent content, byte @Nullable [] data) {
         return switch (content) {
             case MISSING -> null;
-            case EMPTY -> LightCompute.emptyContent;
-            case FULL -> LightCompute.contentFullyLit;
+            case EMPTY -> LightCompute.EMPTY_CONTENT;
+            case FULL -> LightCompute.CONTENT_FULLY_LIT;
             case PRESENT -> data;
         };
     }
@@ -402,8 +401,8 @@ public class PolarLoader implements IChunkLoader {
 
     private @NotNull LightContent getLightContent(byte @Nullable [] data) {
         if (data == null) return LightContent.MISSING;
-        if (data.length == 0 || Arrays.equals(data, LightCompute.emptyContent)) return LightContent.EMPTY;
-        if (Arrays.equals(data, LightCompute.contentFullyLit)) return LightContent.FULL;
+        if (data.length == 0 || Arrays.equals(data, LightCompute.EMPTY_CONTENT)) return LightContent.EMPTY;
+        if (Arrays.equals(data, LightCompute.CONTENT_FULLY_LIT)) return LightContent.FULL;
         return LightContent.PRESENT;
     }
 
