@@ -29,8 +29,8 @@ public class WorldHeightUtil {
     public static @NotNull PolarChunk updateChunkHeight(@NotNull PolarChunk chunk, byte minSection, byte maxSection) {
         PolarSection[] sections = new PolarSection[maxSection - minSection + 1];
 
-        for (int i = minSection; i <= maxSection; i++) {
-            sections[i] = i - minSection < chunk.sections().length ? chunk.sections()[i - minSection] : new PolarSection();
+        for (int i = 0; i <= maxSection - minSection; i++) {
+            sections[i] = i < chunk.sections().length ? chunk.sections()[i] : new PolarSection();
         }
 
         return new PolarChunk(
