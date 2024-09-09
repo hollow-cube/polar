@@ -50,6 +50,8 @@ public class PolarWriter {
         buffer.write(VAR_INT, chunk.x());
         buffer.write(VAR_INT, chunk.z());
 
+        assert sectionCount == chunk.sections().length : "section count and chunk section length mismatch";
+
         for (var section : chunk.sections()) {
             writeSection(buffer, section);
         }
