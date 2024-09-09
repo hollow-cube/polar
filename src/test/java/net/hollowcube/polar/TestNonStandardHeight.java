@@ -40,11 +40,12 @@ class TestNonStandardHeight {
 
         container.setBlock(0, 0, 0, Block.STONE);
 
-        // writes chunks to PolarWorld
-        // should change the world
-        container.saveInstance();
+        assertEquals(loader.world().minSection(), -4);
+        assertEquals(loader.world().maxSection(), 19);
 
-        assertNotEquals(first, loader.world());
+        // writes chunks to PolarWorld
+        // should change the world height
+        container.saveInstance();
 
         assertEquals(loader.world().minSection(), -127);
         assertEquals(loader.world().maxSection(), 126);

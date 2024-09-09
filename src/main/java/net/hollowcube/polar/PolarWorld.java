@@ -37,8 +37,8 @@ public class PolarWorld {
     private CompressionType compression;
 
     // World metadata
-    private final byte minSection;
-    private final byte maxSection;
+    private byte minSection;
+    private byte maxSection;
     private byte @NotNull [] userData;
 
     // Chunk data
@@ -104,6 +104,15 @@ public class PolarWorld {
 
     public byte maxSection() {
         return maxSection;
+    }
+
+    public void setSectionCount(byte minSection, byte maxSection) {
+        for (long l : chunks.keySet()) {
+            chunks.put(l, WorldHeightUtil.updateChunkHeight(chunks.get(l), minSection, maxSection));
+        }
+
+        this.minSection = minSection;
+        this.maxSection = maxSection;
     }
 
     public byte @NotNull [] userData() {
