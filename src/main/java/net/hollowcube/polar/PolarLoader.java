@@ -52,7 +52,7 @@ public class PolarLoader implements IChunkLoader {
 
     private final Path savePath;
     private final ReentrantReadWriteLock worldDataLock = new ReentrantReadWriteLock();
-    private PolarWorld worldData;
+    private final PolarWorld worldData;
 
     private PolarWorldAccess worldAccess = PolarWorldAccess.DEFAULT;
     private boolean parallel = false;
@@ -278,7 +278,7 @@ public class PolarLoader implements IChunkLoader {
 
         worldDataLock.writeLock().lock();
 
-        worldData = PolarWorldUtil.updateWorldHeight(worldData, minSection, maxSection);
+        worldData.setSectionCount(minSection, maxSection);
 
         worldDataLock.writeLock().unlock();
 
