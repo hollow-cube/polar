@@ -16,6 +16,7 @@ import net.minestom.server.instance.block.BlockManager;
 import net.minestom.server.instance.light.LightCompute;
 import net.minestom.server.network.NetworkBuffer;
 import net.minestom.server.registry.DynamicRegistry;
+import net.minestom.server.world.DimensionType;
 import net.minestom.server.world.biome.Biome;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -33,7 +34,10 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import static net.minestom.server.instance.Chunk.CHUNK_SECTION_SIZE;
 
 @SuppressWarnings("UnstableApiUsage")
 public class PolarLoader implements IChunkLoader {
@@ -48,7 +52,7 @@ public class PolarLoader implements IChunkLoader {
 
     private final Path savePath;
     private final ReentrantReadWriteLock worldDataLock = new ReentrantReadWriteLock();
-    private final PolarWorld worldData;
+    private PolarWorld worldData;
 
     private PolarWorldAccess worldAccess = PolarWorldAccess.DEFAULT;
     private boolean parallel = false;
@@ -188,7 +192,7 @@ public class PolarLoader implements IChunkLoader {
         } else {
             final var paletteData = sectionData.blockData();
             section.blockPalette().setAll((x, y, z) -> {
-                int index = y * Chunk.CHUNK_SECTION_SIZE * Chunk.CHUNK_SECTION_SIZE + z * Chunk.CHUNK_SECTION_SIZE + x;
+                int index = y * CHUNK_SECTION_SIZE * CHUNK_SECTION_SIZE + z * CHUNK_SECTION_SIZE + x;
                 return blockPalette[paletteData[index]].stateId();
             });
         }
@@ -263,6 +267,21 @@ public class PolarLoader implements IChunkLoader {
     @Override
     public @NotNull CompletableFuture<Void> saveInstance(@NotNull Instance instance) {
         worldData.userData(NetworkBuffer.makeArray(b -> worldAccess.saveWorldData(instance, b)));
+        DimensionType dimensionType = MinecraftServer.getDimensionTypeRegistry().get(instance.getDimensionType());
+
+        byte minSection = (byte) (dimensionType.minY() / CHUNK_SECTION_SIZE);
+
+        byte maxSection = (byte) (dimensionType.maxY() / CHUNK_SECTION_SIZE - 1);
+
+        if (minSection == this.worldData.minSection() && this.worldData.maxSection() == maxSection)
+            return saveChunks(instance.getChunks());
+
+        worldDataLock.writeLock().lock();
+
+        worldData = PolarWorldUtil.updateWorldHeight(worldData, minSection, maxSection);
+
+        worldDataLock.writeLock().unlock();
+
         return saveChunks(instance.getChunks());
     }
 
@@ -297,7 +316,7 @@ public class PolarLoader implements IChunkLoader {
         var dimension = chunk.getInstance().getCachedDimensionType();
 
         var blockEntities = new ArrayList<PolarChunk.BlockEntity>();
-        var sections = new PolarSection[dimension.height() / Chunk.CHUNK_SECTION_SIZE];
+        var sections = new PolarSection[dimension.height() / CHUNK_SECTION_SIZE];
         assert sections.length == chunk.getSections().size() : "World height mismatch";
 
         var heightmaps = new int[PolarChunk.MAX_HEIGHTMAPS][];
@@ -334,10 +353,10 @@ public class PolarLoader implements IChunkLoader {
                     blockData = localBlockData;
 
                     // Block entities
-                    for (int sectionLocalY = 0; sectionLocalY < Chunk.CHUNK_SECTION_SIZE; sectionLocalY++) {
+                    for (int sectionLocalY = 0; sectionLocalY < CHUNK_SECTION_SIZE; sectionLocalY++) {
                         for (int z = 0; z < Chunk.CHUNK_SIZE_Z; z++) {
                             for (int x = 0; x < Chunk.CHUNK_SIZE_X; x++) {
-                                int y = sectionLocalY + sectionY * Chunk.CHUNK_SECTION_SIZE;
+                                int y = sectionLocalY + sectionY * CHUNK_SECTION_SIZE;
                                 var block = chunk.getBlock(x, y, z, Block.Getter.Condition.CACHED);
                                 if (block == null) continue;
 
