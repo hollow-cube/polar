@@ -4,11 +4,14 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.utils.chunk.ChunkUtils;
+import net.minestom.server.world.DimensionType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.List;
+
+import static net.minestom.server.instance.Chunk.CHUNK_SECTION_SIZE;
 
 /**
  * A Java type representing the latest version of the world format.
@@ -43,6 +46,18 @@ public class PolarWorld {
 
     public PolarWorld() {
         this(LATEST_VERSION, MinecraftServer.DATA_VERSION, DEFAULT_COMPRESSION, (byte) -4, (byte) 19, new byte[0], List.of());
+    }
+
+    public PolarWorld(@NotNull DimensionType dimensionType) {
+        this(
+                LATEST_VERSION,
+                MinecraftServer.DATA_VERSION,
+                DEFAULT_COMPRESSION,
+                (byte) (dimensionType.minY() / CHUNK_SECTION_SIZE),
+                (byte) (dimensionType.maxY() / CHUNK_SECTION_SIZE - 1),
+                new byte[0],
+                List.of()
+        );
     }
 
     public PolarWorld(

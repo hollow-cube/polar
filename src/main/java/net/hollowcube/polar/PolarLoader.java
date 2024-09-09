@@ -55,12 +55,12 @@ public class PolarLoader implements IChunkLoader {
     private boolean loadLighting = true;
 
     public PolarLoader(@NotNull Path path) throws IOException {
-        this.savePath = path;
-        if (Files.exists(path)) {
-            this.worldData = PolarReader.read(Files.readAllBytes(path));
-        } else {
-            this.worldData = new PolarWorld();
-        }
+        this(path, Files.exists(path) ? PolarReader.read(Files.readAllBytes(path)) : new PolarWorld());
+    }
+
+    public PolarLoader(@NotNull Path savePath, @NotNull PolarWorld worldData) {
+        this.savePath = savePath;
+        this.worldData = worldData;
     }
 
     public PolarLoader(@NotNull InputStream inputStream) throws IOException {
