@@ -9,6 +9,9 @@ import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+
 class TestNonStandardHeight {
     static final DimensionType dimensionType = DimensionType.builder()
             .minY(-2032)
@@ -29,15 +32,24 @@ class TestNonStandardHeight {
     void testNonStandardDimensionHeight() {
         InstanceContainer container = new InstanceContainer(UUID.randomUUID(), dimensionTypeKey);
 
-        PolarWorld world = new PolarWorld(dimensionType);
+        PolarWorld first = new PolarWorld();
 
-        container.setChunkLoader(new PolarLoader(world));
+        PolarLoader loader = new PolarLoader(first);
+
+        container.setChunkLoader(loader);
 
         container.setBlock(0, 0, 0, Block.STONE);
 
-        container.saveChunksToStorage(); // writes chunks to PolarWorld
+        // writes chunks to PolarWorld
+        // should change the world
+        container.saveInstance();
 
-        byte[] bytes = PolarWriter.write(world);
+        assertNotEquals(first, loader.world());
+
+        assertEquals(loader.world().minSection(), -127);
+        assertEquals(loader.world().maxSection(), 126);
+
+        byte[] bytes = PolarWriter.write(loader.world());
 
         PolarReader.read(bytes);
     }
