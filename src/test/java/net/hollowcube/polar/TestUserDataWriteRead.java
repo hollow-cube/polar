@@ -34,7 +34,7 @@ class TestUserDataWriteRead {
         var instance = new InstanceContainer(UUID.randomUUID(), DimensionType.OVERWORLD, loader);
         var chunk = loader.loadChunk(instance, 0, 0).join();
 
-        loader.saveChunk(chunk).join();
+        loader.saveChunk(chunk);
 
         var newPolarChunk = world.chunkAt(0, 0);
         var savedTime = new NetworkBuffer(ByteBuffer.wrap(newPolarChunk.userData())).read(NetworkBuffer.LONG);
