@@ -3,7 +3,7 @@ package net.hollowcube.polar;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import net.minestom.server.MinecraftServer;
-import net.minestom.server.utils.chunk.ChunkUtils;
+import net.minestom.server.coordinate.CoordConversion;
 import net.minestom.server.world.DimensionType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -77,7 +77,7 @@ public class PolarWorld {
         this.userData = userData;
 
         for (var chunk : chunks) {
-            var index = ChunkUtils.getChunkIndex(chunk.x(), chunk.z());
+            var index = CoordConversion.chunkIndex(chunk.x(), chunk.z());
             this.chunks.put(index, chunk);
         }
     }
@@ -124,11 +124,11 @@ public class PolarWorld {
     }
 
     public @Nullable PolarChunk chunkAt(int x, int z) {
-        return chunks.getOrDefault(ChunkUtils.getChunkIndex(x, z), null);
+        return chunks.getOrDefault(CoordConversion.chunkIndex(x, z), null);
     }
 
     public void updateChunkAt(int x, int z, @NotNull PolarChunk chunk) {
-        chunks.put(ChunkUtils.getChunkIndex(x, z), chunk);
+        chunks.put(CoordConversion.chunkIndex(x, z), chunk);
     }
 
     public @NotNull Collection<PolarChunk> chunks() {

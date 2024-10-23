@@ -31,10 +31,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static net.minestom.server.instance.Chunk.CHUNK_SECTION_SIZE;
@@ -123,17 +120,17 @@ public class PolarLoader implements IChunkLoader {
     public void loadInstance(@NotNull Instance instance) {
         var userData = worldData.userData();
         if (userData.length > 0) {
-            worldAccess.loadWorldData(instance, new NetworkBuffer(ByteBuffer.wrap(userData)));
+            worldAccess.loadWorldData(instance, NetworkBuffer.wrap(userData, 0, 0));
         }
     }
 
     @Override
-    public @NotNull CompletableFuture<@Nullable Chunk> loadChunk(@NotNull Instance instance, int chunkX, int chunkZ) {
+    public @Nullable Chunk loadChunk(@NotNull Instance instance, int chunkX, int chunkZ) {
         // Only need to lock for this tiny part, chunks are immutable.
         worldDataLock.readLock().lock();
         var chunkData = worldData.chunkAt(chunkX, chunkZ);
         worldDataLock.readLock().unlock();
-        if (chunkData == null) return CompletableFuture.completedFuture(null);
+        if (chunkData == null) return null;
 
         // We are making the assumption here that the chunk height is the same as this world.
         // Polar includes world height metadata in the prelude and assumes all chunks match
@@ -165,11 +162,11 @@ public class PolarLoader implements IChunkLoader {
 
             var userData = chunkData.userData();
             if (userData.length > 0) {
-                worldAccess.loadChunkData(chunk, new NetworkBuffer(ByteBuffer.wrap(userData)));
+                worldAccess.loadChunkData(chunk, NetworkBuffer.wrap(userData, 0, 0));
             }
         }
 
-        return CompletableFuture.completedFuture(chunk);
+        return chunk;
     }
 
     private void loadSection(@NotNull PolarSection sectionData, @NotNull Section section) {
@@ -265,7 +262,7 @@ public class PolarLoader implements IChunkLoader {
     }
 
     @Override
-    public @NotNull CompletableFuture<Void> saveInstance(@NotNull Instance instance) {
+    public void saveInstance(@NotNull Instance instance) {
         worldData.userData(NetworkBuffer.makeArray(b -> worldAccess.saveWorldData(instance, b)));
         DimensionType dimensionType = MinecraftServer.getDimensionTypeRegistry().get(instance.getDimensionType());
 
@@ -273,8 +270,10 @@ public class PolarLoader implements IChunkLoader {
 
         byte maxSection = (byte) (dimensionType.maxY() / CHUNK_SECTION_SIZE - 1);
 
-        if (minSection == this.worldData.minSection() && this.worldData.maxSection() == maxSection)
-            return saveChunks(instance.getChunks());
+        if (minSection == this.worldData.minSection() && this.worldData.maxSection() == maxSection) {
+            saveChunks(instance.getChunks());
+            return;
+        }
 
         worldDataLock.writeLock().lock();
 
@@ -282,7 +281,7 @@ public class PolarLoader implements IChunkLoader {
 
         worldDataLock.writeLock().unlock();
 
-        return saveChunks(instance.getChunks());
+        saveChunks(instance.getChunks());
     }
 
     @Override
@@ -291,7 +290,7 @@ public class PolarLoader implements IChunkLoader {
     }
 
     @Override
-    public @NotNull CompletableFuture<Void> saveChunks(@NotNull Collection<Chunk> chunks) {
+    public void saveChunks(@NotNull Collection<Chunk> chunks) {
         var blockCache = new Short2ObjectOpenHashMap<String>();
 
         // Update state of each chunk locally
@@ -299,17 +298,12 @@ public class PolarLoader implements IChunkLoader {
 
         // Write the file to disk
         if (savePath != null) {
-            return CompletableFuture.runAsync(() -> {
-                try {
-                    Files.write(savePath, PolarWriter.write(worldData),
-                            StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-                } catch (IOException e) {
-                    EXCEPTION_HANDLER.handleException(new RuntimeException("Failed to save world", e));
-                }
-            }, ForkJoinPool.commonPool());
+            try {
+                Files.write(savePath, PolarWriter.write(worldData), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            } catch (IOException e) {
+                EXCEPTION_HANDLER.handleException(new RuntimeException("Failed to save world", e));
+            }
         }
-
-        return CompletableFuture.completedFuture(null);
     }
 
     private void updateChunkData(@NotNull Short2ObjectMap<String> blockCache, @NotNull Chunk chunk) {
@@ -388,7 +382,7 @@ public class PolarLoader implements IChunkLoader {
 
                 byte[] blockLight = section.blockLight().array();
                 byte[] skyLight = section.skyLight().array();
-                
+
                 sections[i] = new PolarSection(
                         blockPalette.toArray(new String[0]), blockData,
                         biomePalette.toArray(new String[0]), biomeData,
@@ -426,8 +420,8 @@ public class PolarLoader implements IChunkLoader {
     }
 
     @Override
-    public @NotNull CompletableFuture<Void> saveChunk(@NotNull Chunk chunk) {
-        return saveChunks(List.of(chunk));
+    public void saveChunk(@NotNull Chunk chunk) {
+        saveChunks(List.of(chunk));
     }
 
     private @NotNull String blockToString(@NotNull Block block) {
