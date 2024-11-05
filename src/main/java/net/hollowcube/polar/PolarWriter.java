@@ -21,22 +21,16 @@ public class PolarWriter {
 
     public static byte[] write(@NotNull PolarWorld world, @NotNull PolarDataConverter dataConverter) {
         // Write the compressed content first
-        var content = builder(1024).build();
-        content.write(BYTE, world.minSection());
-        content.write(BYTE, world.maxSection());
-        content.write(BYTE_ARRAY, world.userData());
+        var contentBytes = NetworkBuffer.makeArray(content -> {
+            content.write(BYTE, world.minSection());
+            content.write(BYTE, world.maxSection());
+            content.write(BYTE_ARRAY, world.userData());
 
-        content.write(new NetworkBuffer.Type<PolarChunk>() {
-            @Override
-            public void write(@NotNull NetworkBuffer buffer, PolarChunk value) {
-                writeChunk(buffer, value, world.maxSection() - world.minSection() + 1);
+            content.write(VAR_INT, world.chunks().size());
+            for (var chunk : world.chunks()) {
+                writeChunk(content, chunk, world.maxSection() - world.minSection() + 1);
             }
-
-            @Override
-            public PolarChunk read(@NotNull NetworkBuffer buffer) {
-                throw new UnsupportedOperationException();
-            }
-        }.list(), world.chunks().stream().toList());
+        });
 
         // Create final buffer
         return NetworkBuffer.makeArray(buffer -> {
@@ -46,13 +40,12 @@ public class PolarWriter {
             buffer.write(BYTE, (byte) world.compression().ordinal());
             switch (world.compression()) {
                 case NONE -> {
-                    buffer.write(VAR_INT, (int) content.readableBytes());
-
-                    buffer.write(RAW_BYTES, content.read(FixedRawBytes((int) content.readableBytes())));
+                    buffer.write(VAR_INT, contentBytes.length);
+                    buffer.write(RAW_BYTES, contentBytes);
                 }
                 case ZSTD -> {
-                    buffer.write(VAR_INT, (int) content.readableBytes());
-                    buffer.write(RAW_BYTES, Zstd.compress(content.read(FixedRawBytes((int) content.readableBytes()))));
+                    buffer.write(VAR_INT, contentBytes.length);
+                    buffer.write(RAW_BYTES, Zstd.compress(contentBytes));
                 }
             }
         });
@@ -67,17 +60,11 @@ public class PolarWriter {
         for (var section : chunk.sections()) {
             writeSection(buffer, section);
         }
-        buffer.write(new NetworkBuffer.Type<PolarChunk.BlockEntity>() {
-            @Override
-            public void write(@NotNull NetworkBuffer buffer, PolarChunk.BlockEntity value) {
-                writeBlockEntity(buffer, value);
-            }
 
-            @Override
-            public PolarChunk.BlockEntity read(@NotNull NetworkBuffer buffer) {
-                throw new UnsupportedOperationException();
-            }
-        }.list(), chunk.blockEntities());
+        buffer.write(VAR_INT, chunk.blockEntities().size());
+        for (var blockEntity : chunk.blockEntities()) {
+            writeBlockEntity(buffer, blockEntity);
+        }
 
         {
             int heightmapBits = 0;

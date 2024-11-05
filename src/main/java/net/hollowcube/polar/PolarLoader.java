@@ -26,7 +26,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -120,7 +119,7 @@ public class PolarLoader implements IChunkLoader {
     public void loadInstance(@NotNull Instance instance) {
         var userData = worldData.userData();
         if (userData.length > 0) {
-            worldAccess.loadWorldData(instance, NetworkBuffer.wrap(userData, 0, 0));
+            worldAccess.loadWorldData(instance, NetworkBuffer.wrap(userData, 0, userData.length));
         }
     }
 
@@ -162,7 +161,7 @@ public class PolarLoader implements IChunkLoader {
 
             var userData = chunkData.userData();
             if (userData.length > 0) {
-                worldAccess.loadChunkData(chunk, NetworkBuffer.wrap(userData, 0, 0));
+                worldAccess.loadChunkData(chunk, NetworkBuffer.wrap(userData, 0, userData.length));
             }
         }
 

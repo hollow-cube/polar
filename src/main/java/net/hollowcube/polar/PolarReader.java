@@ -13,14 +13,14 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.DataInputStream;
 import java.io.InputStream;
+import java.util.ArrayList;
 
 import static net.minestom.server.network.NetworkBuffer.*;
 
-@SuppressWarnings("UnstableApiUsage")
 public class PolarReader {
+    static final NetworkBuffer.Type<byte[]> LIGHT_DATA = NetworkBuffer.FixedRawBytes(2048);
+
     private static final boolean FORCE_LEGACY_NBT = Boolean.getBoolean("polar.debug.force-legacy-nbt");
-    private static final int MAX_BLOCK_ENTITIES = Integer.MAX_VALUE;
-    private static final int MAX_CHUNKS = Integer.MAX_VALUE;
     private static final int MAX_BLOCK_PALETTE_SIZE = 16 * 16 * 16;
     private static final int MAX_BIOME_PALETTE_SIZE = 8 * 8 * 8;
 
@@ -32,7 +32,7 @@ public class PolarReader {
     }
 
     public static @NotNull PolarWorld read(byte @NotNull [] data, @NotNull PolarDataConverter dataConverter) {
-        var buffer = NetworkBuffer.wrap(data, 0, 0);
+        var buffer = NetworkBuffer.wrap(data, 0, data.length);
         buffer.writeIndex(data.length); // Set write index to end so readableBytes returns remaining bytes
 
         var magicNumber = buffer.read(INT);
@@ -60,17 +60,11 @@ public class PolarReader {
         if (version > PolarWorld.VERSION_WORLD_USERDATA)
             userData = buffer.read(BYTE_ARRAY);
 
-        var chunks =  buffer.read(new NetworkBuffer.Type<PolarChunk>() {
-            @Override
-            public void write(@NotNull NetworkBuffer buffer, PolarChunk value) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public PolarChunk read(@NotNull NetworkBuffer buffer) {
-                return readChunk(dataConverter, version, dataVersion, buffer, maxSection - minSection + 1);
-            }
-        }.list(MAX_CHUNKS));
+        int chunkCount = buffer.read(VAR_INT);
+        var chunks = new ArrayList<PolarChunk>(chunkCount);
+        for (int i = 0; i < chunkCount; i++) {
+            chunks.add(readChunk(dataConverter, version, dataVersion, buffer, maxSection - minSection + 1));
+        }
 
         return new PolarWorld(version, dataVersion, compression, minSection, maxSection, userData, chunks);
     }
@@ -84,17 +78,11 @@ public class PolarReader {
             sections[i] = readSection(dataConverter, version, dataVersion, buffer);
         }
 
-        var blockEntities = buffer.read(new NetworkBuffer.Type<PolarChunk.BlockEntity>() {
-            @Override
-            public void write(@NotNull NetworkBuffer buffer, PolarChunk.BlockEntity value) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public PolarChunk.BlockEntity read(@NotNull NetworkBuffer buffer) {
-                return readBlockEntity(dataConverter, version, dataVersion, buffer);
-            }
-        }.list(MAX_BLOCK_ENTITIES));
+        int blockEntityCount = buffer.read(VAR_INT);
+        var blockEntities = new ArrayList<PolarChunk.BlockEntity>(blockEntityCount);
+        for (int i = 0; i < blockEntityCount; i++) {
+            blockEntities.add(readBlockEntity(dataConverter, version, dataVersion, buffer));
+        }
 
         var heightmaps = new int[PolarChunk.MAX_HEIGHTMAPS][];
         int heightmapMask = buffer.read(INT);
@@ -170,17 +158,17 @@ public class PolarReader {
                     ? LightContent.VALUES[buffer.read(BYTE)]
                     : (buffer.read(BOOLEAN) ? LightContent.PRESENT : LightContent.MISSING);
             if (blockLightContent == LightContent.PRESENT)
-                blockLight = buffer.read(FixedRawBytes(2048));
+                blockLight = buffer.read(LIGHT_DATA);
             skyLightContent = version >= PolarWorld.VERSION_IMPROVED_LIGHT
                     ? LightContent.VALUES[buffer.read(BYTE)]
                     : (buffer.read(BOOLEAN) ? LightContent.PRESENT : LightContent.MISSING);
             if (skyLightContent == LightContent.PRESENT)
-                skyLight = buffer.read(FixedRawBytes(2048));
+                skyLight = buffer.read(LIGHT_DATA);
         } else if (buffer.read(BOOLEAN)) {
             blockLightContent = LightContent.PRESENT;
-            blockLight = buffer.read(FixedRawBytes(2048));
+            blockLight = buffer.read(LIGHT_DATA);
             skyLightContent = LightContent.PRESENT;
-            skyLight = buffer.read(FixedRawBytes(2048));
+            skyLight = buffer.read(LIGHT_DATA);
         }
 
         return new PolarSection(
@@ -230,7 +218,7 @@ public class PolarReader {
         return switch (compression) {
             case NONE -> buffer;
             case ZSTD -> {
-                var bytes = Zstd.decompress(buffer.read(FixedRawBytes((int) buffer.readableBytes())), length);
+                var bytes = Zstd.decompress(buffer.read(RAW_BYTES), length);
                 var newBuffer = NetworkBuffer.wrap(bytes, 0, 0);
                 newBuffer.writeIndex(bytes.length);
                 yield newBuffer;
