@@ -7,10 +7,7 @@ import net.minestom.server.MinecraftServer;
 import net.minestom.server.command.builder.arguments.minecraft.ArgumentBlockState;
 import net.minestom.server.command.builder.exception.ArgumentSyntaxException;
 import net.minestom.server.exception.ExceptionManager;
-import net.minestom.server.instance.Chunk;
-import net.minestom.server.instance.IChunkLoader;
-import net.minestom.server.instance.Instance;
-import net.minestom.server.instance.Section;
+import net.minestom.server.instance.*;
 import net.minestom.server.instance.block.Block;
 import net.minestom.server.instance.block.BlockManager;
 import net.minestom.server.instance.light.LightCompute;
@@ -18,6 +15,7 @@ import net.minestom.server.network.NetworkBuffer;
 import net.minestom.server.registry.DynamicRegistry;
 import net.minestom.server.world.DimensionType;
 import net.minestom.server.world.biome.Biome;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -26,10 +24,12 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -39,9 +39,41 @@ import static net.minestom.server.instance.Chunk.CHUNK_SECTION_SIZE;
 public class PolarLoader implements IChunkLoader {
     static final Logger logger = LoggerFactory.getLogger(PolarLoader.class);
     private static final BlockManager BLOCK_MANAGER = MinecraftServer.getBlockManager();
-    private static final DynamicRegistry<Biome> BIOME_REGISTRY = MinecraftServer.getBiomeRegistry();
+    static final DynamicRegistry<Biome> BIOME_REGISTRY = MinecraftServer.getBiomeRegistry();
     private static final ExceptionManager EXCEPTION_HANDLER = MinecraftServer.getExceptionManager();
-    private static final int PLAINS_BIOME_ID = BIOME_REGISTRY.getId(Biome.PLAINS);
+    static final int PLAINS_BIOME_ID = BIOME_REGISTRY.getId(Biome.PLAINS);
+
+    /**
+     * Loads a polar world into an instance in a streaming manner.
+     *
+     * <p>This method significantly reduces the memory overhead of loading a world and should generally be preferrable.
+     * It is still in an experimental state and could have issues. It also accesses some internal Minestom APIs and
+     * as such only works with {@link InstanceContainer} and is more prone to issues across Minestom versions.</p>
+     *
+     * @param instance The instance to load the world data into, all chunks in the polar world will be replaced.
+     * @param is       The input stream to read the polar world data from. The stream will be closed after reading.
+     * @return A future that completes when the world has been fully loaded.
+     */
+    @ApiStatus.Experimental
+    public static @NotNull CompletableFuture<Void> streamLoad(
+            @NotNull InstanceContainer instance, @NotNull ReadableByteChannel is, long fileSize,
+            @Nullable PolarDataConverter dataConverter,
+            @Nullable PolarWorldAccess worldAccess,
+            boolean loadLighting) {
+        final var loader = new StreamingPolarLoader(instance,
+                Objects.requireNonNullElse(dataConverter, PolarDataConverter.NOOP),
+                worldAccess, loadLighting);
+        final var future = new CompletableFuture<Void>();
+        Thread.startVirtualThread(() -> {
+            try {
+                loader.loadAllSequential(is, fileSize);
+                future.complete(null);
+            } catch (Throwable e) {
+                future.completeExceptionally(e);
+            }
+        });
+        return future;
+    }
 
     private final Map<String, Integer> biomeReadCache = new ConcurrentHashMap<>();
     private final Map<Integer, String> biomeWriteCache = new ConcurrentHashMap<>();
@@ -154,7 +186,7 @@ public class PolarLoader implements IChunkLoader {
             }
 
             for (var blockEntity : chunkData.blockEntities()) {
-                loadBlockEntity(blockEntity, chunk);
+                loadBlockEntity(chunk, blockEntity);
             }
 
             worldAccess.loadHeightmaps(chunk, chunkData.heightmaps());
@@ -231,7 +263,7 @@ public class PolarLoader implements IChunkLoader {
             section.setSkyLight(getLightArray(sectionData.skyLightContent(), sectionData.skyLight()));
     }
 
-    private byte[] getLightArray(@NotNull LightContent content, byte @Nullable [] data) {
+    static byte[] getLightArray(@NotNull LightContent content, byte @Nullable [] data) {
         return switch (content) {
             case MISSING -> null;
             case EMPTY -> LightCompute.EMPTY_CONTENT;
@@ -240,16 +272,19 @@ public class PolarLoader implements IChunkLoader {
         };
     }
 
-    private void loadBlockEntity(@NotNull PolarChunk.BlockEntity blockEntity, @NotNull Chunk chunk) {
+    static @NotNull Block createBlockEntity(@NotNull Chunk chunk, @NotNull PolarChunk.BlockEntity blockEntity) {
         // Fetch the block type, we can ignore Handler/NBT since we are about to replace it
         var block = chunk.getBlock(blockEntity.x(), blockEntity.y(), blockEntity.z(), Block.Getter.Condition.TYPE);
-
         if (blockEntity.id() != null)
             block = block.withHandler(BLOCK_MANAGER.getHandlerOrDummy(blockEntity.id()));
         if (blockEntity.data() != null)
             block = block.withNbt(blockEntity.data());
-        if (worldAccess != null)
-            chunk.setBlock(blockEntity.x(), blockEntity.y(), blockEntity.z(), block);
+        return block;
+    }
+
+    static void loadBlockEntity(@NotNull Chunk chunk, @NotNull PolarChunk.BlockEntity blockEntity) {
+        var block = createBlockEntity(chunk, blockEntity);
+        chunk.setBlock(blockEntity.x(), blockEntity.y(), blockEntity.z(), block);
     }
 
     // Unloading/saving

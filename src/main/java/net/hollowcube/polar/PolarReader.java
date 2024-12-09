@@ -21,8 +21,8 @@ public class PolarReader {
     static final NetworkBuffer.Type<byte[]> LIGHT_DATA = NetworkBuffer.FixedRawBytes(2048);
 
     private static final boolean FORCE_LEGACY_NBT = Boolean.getBoolean("polar.debug.force-legacy-nbt");
-    private static final int MAX_BLOCK_PALETTE_SIZE = 16 * 16 * 16;
-    private static final int MAX_BIOME_PALETTE_SIZE = 8 * 8 * 8;
+    static final int MAX_BLOCK_PALETTE_SIZE = 16 * 16 * 16;
+    static final int MAX_BIOME_PALETTE_SIZE = 8 * 8 * 8;
 
     private PolarReader() {
     }
@@ -84,21 +84,7 @@ public class PolarReader {
             blockEntities.add(readBlockEntity(dataConverter, version, dataVersion, buffer));
         }
 
-        var heightmaps = new int[PolarChunk.MAX_HEIGHTMAPS][];
-        int heightmapMask = buffer.read(INT);
-        for (int i = 0; i < PolarChunk.MAX_HEIGHTMAPS; i++) {
-            if ((heightmapMask & (1 << i)) == 0)
-                continue;
-
-            var packed = buffer.read(LONG_ARRAY);
-            if (packed.length == 0) {
-                heightmaps[i] = new int[0];
-            } else {
-                var bitsPerEntry = packed.length * 64 / PolarChunk.HEIGHTMAP_SIZE;
-                heightmaps[i] = new int[PolarChunk.HEIGHTMAP_SIZE];
-                PaletteUtil.unpack(heightmaps[i], packed, bitsPerEntry);
-            }
-        }
+        var heightmaps = readHeightmapData(buffer, false);
 
         // Objects
         byte[] userData = new byte[0];
@@ -122,16 +108,7 @@ public class PolarReader {
         if (dataVersion < dataConverter.dataVersion()) {
             dataConverter.convertBlockPalette(blockPalette, dataVersion, dataConverter.dataVersion());
         }
-        if (version <= PolarWorld.VERSION_SHORT_GRASS) {
-            for (int i = 0; i < blockPalette.length; i++) {
-                if (blockPalette[i].contains("grass")) {
-                    String strippedID = blockPalette[i].split("\\[")[0];
-                    if (NamespaceID.from(strippedID).path().equals("grass")) {
-                        blockPalette[i] = "short_grass";
-                    }
-                }
-            }
-        }
+        upgradeGrassInPalette(blockPalette, version);
         int[] blockData = null;
         if (blockPalette.length > 1) {
             blockData = new int[PolarSection.BLOCK_PALETTE_SIZE];
@@ -179,7 +156,43 @@ public class PolarReader {
         );
     }
 
-    private static @NotNull PolarChunk.BlockEntity readBlockEntity(@NotNull PolarDataConverter dataConverter, int version, int dataVersion, @NotNull NetworkBuffer buffer) {
+    static void upgradeGrassInPalette(String[] blockPalette, int version) {
+        if (version <= PolarWorld.VERSION_SHORT_GRASS) {
+            for (int i = 0; i < blockPalette.length; i++) {
+                if (blockPalette[i].contains("grass")) {
+                    String strippedID = blockPalette[i].split("\\[")[0];
+                    if (NamespaceID.from(strippedID).path().equals("grass")) {
+                        blockPalette[i] = "short_grass";
+                    }
+                }
+            }
+        }
+    }
+
+    static int[][] readHeightmapData(@NotNull NetworkBuffer buffer, boolean skip) {
+        var heightmaps = !skip ? new int[PolarChunk.MAX_HEIGHTMAPS][] : null;
+        int heightmapMask = buffer.read(INT);
+        for (int i = 0; i < PolarChunk.MAX_HEIGHTMAPS; i++) {
+            if ((heightmapMask & (1 << i)) == 0)
+                continue;
+
+            if (!skip) {
+                var packed = buffer.read(LONG_ARRAY);
+                if (packed.length == 0) {
+                    heightmaps[i] = new int[0];
+                } else {
+                    var bitsPerEntry = packed.length * 64 / PolarChunk.HEIGHTMAP_SIZE;
+                    heightmaps[i] = new int[PolarChunk.HEIGHTMAP_SIZE];
+                    PaletteUtil.unpack(heightmaps[i], packed, bitsPerEntry);
+                }
+            } else {
+                buffer.advanceRead(buffer.read(VAR_INT) * 8); // Skip a long array
+            }
+        }
+        return heightmaps;
+    }
+
+    static @NotNull PolarChunk.BlockEntity readBlockEntity(@NotNull PolarDataConverter dataConverter, int version, int dataVersion, @NotNull NetworkBuffer buffer) {
         int posIndex = buffer.read(INT);
         var id = buffer.read(STRING.optional());
 
@@ -208,7 +221,7 @@ public class PolarReader {
         );
     }
 
-    private static void validateVersion(int version) {
+    static void validateVersion(int version) {
         var invalidVersionError = String.format("Unsupported Polar version. Up to %d is supported, found %d.",
                 PolarWorld.LATEST_VERSION, version);
         assertThat(version <= PolarWorld.LATEST_VERSION, invalidVersionError);
@@ -250,7 +263,7 @@ public class PolarReader {
     }
 
     @Contract("false, _ -> fail")
-    private static void assertThat(boolean condition, @NotNull String message) {
+    static void assertThat(boolean condition, @NotNull String message) {
         if (!condition) throw new Error(message);
     }
 
