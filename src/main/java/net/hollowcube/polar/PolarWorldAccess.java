@@ -17,7 +17,6 @@ import org.jetbrains.annotations.Nullable;
  * Usage if world access is completely optional, dependent features will not add
  * overhead to the format if unused.
  */
-@SuppressWarnings("UnstableApiUsage")
 public interface PolarWorldAccess {
     PolarWorldAccess DEFAULT = new PolarWorldAccess() {
     };
