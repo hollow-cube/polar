@@ -7,7 +7,6 @@ import net.minestom.server.MinecraftServer;
 import net.minestom.server.command.builder.arguments.minecraft.ArgumentBlockState;
 import net.minestom.server.command.builder.exception.ArgumentSyntaxException;
 import net.minestom.server.coordinate.CoordConversion;
-import net.minestom.server.instance.Chunk;
 import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.instance.Section;
 import net.minestom.server.network.NetworkBuffer;
@@ -22,8 +21,7 @@ import java.util.Objects;
 import static net.hollowcube.polar.PolarLoader.*;
 import static net.hollowcube.polar.PolarReader.*;
 import static net.hollowcube.polar.UnsafeOps.*;
-import static net.minestom.server.instance.palette.PolarPaletteAccessWidener.directReplaceInnerPaletteBiome;
-import static net.minestom.server.instance.palette.PolarPaletteAccessWidener.directReplaceInnerPaletteBlock;
+import static net.minestom.server.instance.Chunk.CHUNK_SECTION_SIZE;
 import static net.minestom.server.network.NetworkBuffer.*;
 import static net.minestom.server.network.PolarBufferAccessWidener.networkBufferAddress;
 import static net.minestom.server.network.PolarBufferAccessWidener.networkBufferView;
@@ -66,7 +64,7 @@ final class StreamingPolarLoader {
         // Chunk data
         int chunkCount = buffer.read(VAR_INT);
         for (int i = 0; i < chunkCount; i++) {
-            unsafeCacheChunk(instance, readChunk(buffer, minSection, maxSection));
+            readChunk(buffer, minSection, maxSection);
         }
 
         Check.stateCondition(buffer.readableBytes() > 0, "Unexpected extra data at end of buffer");
@@ -114,7 +112,7 @@ final class StreamingPolarLoader {
         };
     }
 
-    private @NotNull Chunk readChunk(@NotNull NetworkBuffer buffer, int minSection, int maxSection) {
+    private void readChunk(@NotNull NetworkBuffer buffer, int minSection, int maxSection) {
         final var chunkX = buffer.read(VAR_INT);
         final var chunkZ = buffer.read(VAR_INT);
         final var chunk = instance.getChunkSupplier().createChunk(instance, chunkX, chunkZ);
@@ -147,19 +145,19 @@ final class StreamingPolarLoader {
             int[][] heightmaps = readHeightmapData(buffer, worldAccess == null);
             if (worldAccess != null) worldAccess.loadHeightmaps(chunk, heightmaps);
             else unsafeSetNeedsCompleteHeightmapRefresh(chunk, true);
-
-            // Load user data
-            if (version > PolarWorld.VERSION_USERDATA_OPT_BLOCK_ENT_NBT) {
-                int userDataLength = buffer.read(VAR_INT);
-                if (worldAccess != null) {
-                    var chunkDataView = networkBufferView(buffer, buffer.readIndex(), userDataLength);
-                    worldAccess.loadChunkData(chunk, chunkDataView);
-                }
-                buffer.advanceRead(userDataLength);
-            }
         }
 
-        return chunk;
+        unsafeCacheChunk(instance, chunk);
+
+        // Load user data
+        if (version > PolarWorld.VERSION_USERDATA_OPT_BLOCK_ENT_NBT) {
+            int userDataLength = buffer.read(VAR_INT);
+            if (worldAccess != null) {
+                var chunkDataView = networkBufferView(buffer, buffer.readIndex(), userDataLength);
+                worldAccess.loadChunkData(chunk, chunkDataView);
+            }
+            buffer.advanceRead(userDataLength);
+        }
     }
 
     private void readSection(@NotNull NetworkBuffer buffer, @NotNull Section section) {
@@ -172,24 +170,49 @@ final class StreamingPolarLoader {
                 section.blockPalette().fill(blockPalette[0]);
             }
         } else {
+            var blockData = new int[PolarSection.BLOCK_PALETTE_SIZE];
+
             var rawBlockData = buffer.read(LONG_ARRAY);
             var bitsPerEntry = (int) Math.ceil(Math.log(blockPalette.length) / Math.log(2));
+            PaletteUtil.unpack(blockData, rawBlockData, bitsPerEntry);
 
-            int count = computeCount(blockPalette, rawBlockData, bitsPerEntry);
-            directReplaceInnerPaletteBlock(section.blockPalette(), (byte) bitsPerEntry, count,
-                    blockPalette, rawBlockData);
+            section.blockPalette().setAll((x, y, z) -> {
+                int index = y * CHUNK_SECTION_SIZE * CHUNK_SECTION_SIZE + z * CHUNK_SECTION_SIZE + x;
+                return blockPalette[blockData[index]];
+            });
+
+            // Below was some previous logic, leaving it around for now I would like to fix it up.
+//            System.out.println(Arrays.toString(blockPalette));
+//            var rawBlockData = buffer.read(LONG_ARRAY);
+//            var bitsPerEntry = (int) Math.ceil(Math.log(blockPalette.length) / Math.log(2));
+//
+////            int count = computeCount(blockPalette, rawBlockData, bitsPerEntry);
+//            int count = 16 * 16 * 16;
+//            directReplaceInnerPaletteBlock(section.blockPalette(), (byte) bitsPerEntry, count,
+//                    blockPalette, rawBlockData);
         }
 
         int[] biomePalette = readBiomePalette(buffer);
         if (biomePalette.length == 1) {
             section.biomePalette().fill(biomePalette[0]);
         } else {
+            var biomeData = new int[PolarSection.BIOME_PALETTE_SIZE];
+
             var rawBiomeData = buffer.read(LONG_ARRAY);
             var bitsPerEntry = (int) Math.ceil(Math.log(biomePalette.length) / Math.log(2));
-            // Biome count is irrelevant to the client. Though it might be worth computing it anyway here
-            // in case a server implementation uses it for anything.
-            directReplaceInnerPaletteBiome(section.biomePalette(), (byte) bitsPerEntry, 4 * 4 * 4,
-                    biomePalette, rawBiomeData);
+            PaletteUtil.unpack(biomeData, rawBiomeData, bitsPerEntry);
+
+            section.biomePalette().setAll((x, y, z) -> {
+                int index = x / 4 + (z / 4) * 4 + (y / 4) * 16;
+                return biomePalette[biomeData[index]];
+            });
+
+//            var rawBiomeData = buffer.read(LONG_ARRAY);
+//            var bitsPerEntry = (int) Math.ceil(Math.log(biomePalette.length) / Math.log(2));
+//            // Biome count is irrelevant to the client. Though it might be worth computing it anyway here
+//            // in case a server implementation uses it for anything.
+//            directReplaceInnerPaletteBiome(section.biomePalette(), (byte) bitsPerEntry, 4 * 4 * 4,
+//                    biomePalette, rawBiomeData);
         }
 
         if (version > PolarWorld.VERSION_UNIFIED_LIGHT) {
