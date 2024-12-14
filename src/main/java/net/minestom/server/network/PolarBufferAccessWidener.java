@@ -23,6 +23,7 @@ public final class PolarBufferAccessWidener {
         // this buffer to free the backing data. We will later update the address.
         var viewBuffer = new NetworkBufferImpl(-1, length, 0, 0, null, impl(buffer).registries);
         setAddress(impl(viewBuffer), getAddress(impl(buffer)) + start);
+        viewBuffer.writeIndex(length);
         viewBuffer.readOnly();
         return viewBuffer;
     }
