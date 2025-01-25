@@ -102,7 +102,6 @@ public class PolarSection {
     }
 
     public byte[] blockLight() {
-        assert blockLight != null : "must check hasBlockLightData() before calling blockLight()";
         return blockLight;
     }
 
@@ -111,7 +110,6 @@ public class PolarSection {
     }
 
     public byte[] skyLight() {
-        assert skyLight != null : "must check hasSkyLightData() before calling skyLight()";
         return skyLight;
     }
 }

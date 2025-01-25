@@ -176,10 +176,18 @@ final class StreamingPolarLoader {
             var bitsPerEntry = (int) Math.ceil(Math.log(blockPalette.length) / Math.log(2));
             PaletteUtil.unpack(blockData, rawBlockData, bitsPerEntry);
 
-            section.blockPalette().setAll((x, y, z) -> {
-                int index = y * CHUNK_SECTION_SIZE * CHUNK_SECTION_SIZE + z * CHUNK_SECTION_SIZE + x;
-                return blockPalette[blockData[index]];
-            });
+            for (int y = 0; y < CHUNK_SECTION_SIZE; y++) {
+                for (int z = 0; z < CHUNK_SECTION_SIZE; z++) {
+                    for (int x = 0; x < CHUNK_SECTION_SIZE; x++) {
+                        int index = y * CHUNK_SECTION_SIZE * CHUNK_SECTION_SIZE + z * CHUNK_SECTION_SIZE + x;
+                        section.blockPalette().set(x, y, z, blockPalette[blockData[index]]);
+                    }
+                }
+            }
+//            section.blockPalette().setAll((x, y, z) -> {
+//                int index = y * CHUNK_SECTION_SIZE * CHUNK_SECTION_SIZE + z * CHUNK_SECTION_SIZE + x;
+//                return blockPalette[blockData[index]];
+//            });
 
             // Below was some previous logic, leaving it around for now I would like to fix it up.
 //            System.out.println(Arrays.toString(blockPalette));
@@ -202,10 +210,18 @@ final class StreamingPolarLoader {
             var bitsPerEntry = (int) Math.ceil(Math.log(biomePalette.length) / Math.log(2));
             PaletteUtil.unpack(biomeData, rawBiomeData, bitsPerEntry);
 
-            section.biomePalette().setAll((x, y, z) -> {
-                int index = x / 4 + (z / 4) * 4 + (y / 4) * 16;
-                return biomePalette[biomeData[index]];
-            });
+            for (int y = 0; y < 4; y++) {
+                for (int z = 0; z < 4; z++) {
+                    for (int x = 0; x < 4; x++) {
+                        int index = x + z * 4 + y * 16;
+                        section.biomePalette().set(x, y, z, biomePalette[biomeData[index]]);
+                    }
+                }
+            }
+//            section.biomePalette().setAll((x, y, z) -> {
+//                int index = x / 4 + (z / 4) * 4 + (y / 4) * 16;
+//                return biomePalette[biomeData[index]];
+//            });
 
 //            var rawBiomeData = buffer.read(LONG_ARRAY);
 //            var bitsPerEntry = (int) Math.ceil(Math.log(biomePalette.length) / Math.log(2));

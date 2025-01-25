@@ -219,10 +219,14 @@ public class PolarLoader implements IChunkLoader {
             section.blockPalette().fill(blockPalette[0].stateId());
         } else {
             final var paletteData = sectionData.blockData();
-            section.blockPalette().setAll((x, y, z) -> {
-                int index = y * CHUNK_SECTION_SIZE * CHUNK_SECTION_SIZE + z * CHUNK_SECTION_SIZE + x;
-                return blockPalette[paletteData[index]].stateId();
-            });
+            for (int y = 0; y < CHUNK_SECTION_SIZE; y++) {
+                for (int z = 0; z < CHUNK_SECTION_SIZE; z++) {
+                    for (int x = 0; x < CHUNK_SECTION_SIZE; x++) {
+                        int index = y * CHUNK_SECTION_SIZE * CHUNK_SECTION_SIZE + z * CHUNK_SECTION_SIZE + x;
+                        section.blockPalette().set(x, y, z, blockPalette[paletteData[index]].stateId());
+                    }
+                }
+            }
         }
 
         // Biomes
@@ -242,18 +246,22 @@ public class PolarLoader implements IChunkLoader {
             section.biomePalette().fill(biomePalette[0]);
         } else {
             final var paletteData = sectionData.biomeData();
-            section.biomePalette().setAll((x, y, z) -> {
-                int index = x / 4 + (z / 4) * 4 + (y / 4) * 16;
+            for (int y = 0; y < CHUNK_SECTION_SIZE; y++) {
+                for (int z = 0; z < CHUNK_SECTION_SIZE; z++) {
+                    for (int x = 0; x < CHUNK_SECTION_SIZE; x++) {
+                        int index = x / 4 + (z / 4) * 4 + (y / 4) * 16;
 
-                var paletteIndex = paletteData[index];
-                if (paletteIndex >= biomePalette.length) {
-                    logger.error("Invalid biome palette index. This is probably a corrupted world, " +
-                            "but it has been loaded with plains instead. No data has been written.");
-                    return PLAINS_BIOME_ID;
+                        var paletteIndex = paletteData[index];
+                        if (paletteIndex >= biomePalette.length) {
+                            logger.error("Invalid biome palette index. This is probably a corrupted world, " +
+                                    "but it has been loaded with plains instead. No data has been written.");
+                            section.biomePalette().set(x, y, z, PLAINS_BIOME_ID);
+                        }
+
+                        section.biomePalette().set(x, y, z, biomePalette[paletteIndex]);
+                    }
                 }
-
-                return biomePalette[paletteIndex];
-            });
+            }
         }
 
         // Light

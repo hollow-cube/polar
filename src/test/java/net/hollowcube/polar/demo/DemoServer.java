@@ -46,7 +46,7 @@ public class DemoServer {
                     event.getPlayer().setGameMode(GameMode.CREATIVE);
                 })
                 .addListener(PlayerChatEvent.class, event -> {
-                    if (!event.getMessage().equals("save")) return;
+                    if (!event.getRawMessage().equals("save")) return;
 
                     var start = System.currentTimeMillis();
                     instance.saveChunksToStorage().join();
