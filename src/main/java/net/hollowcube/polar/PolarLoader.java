@@ -12,7 +12,6 @@ import net.minestom.server.instance.block.Block;
 import net.minestom.server.instance.block.BlockManager;
 import net.minestom.server.instance.light.LightCompute;
 import net.minestom.server.network.NetworkBuffer;
-import net.minestom.server.registry.DynamicRegistry;
 import net.minestom.server.world.DimensionType;
 import net.minestom.server.world.biome.Biome;
 import org.jetbrains.annotations.ApiStatus;
@@ -39,9 +38,7 @@ import static net.minestom.server.instance.Chunk.CHUNK_SECTION_SIZE;
 public class PolarLoader implements IChunkLoader {
     static final Logger logger = LoggerFactory.getLogger(PolarLoader.class);
     private static final BlockManager BLOCK_MANAGER = MinecraftServer.getBlockManager();
-    static final DynamicRegistry<Biome> BIOME_REGISTRY = MinecraftServer.getBiomeRegistry();
     private static final ExceptionManager EXCEPTION_HANDLER = MinecraftServer.getExceptionManager();
-    static final int PLAINS_BIOME_ID = BIOME_REGISTRY.getId(Biome.PLAINS);
 
     /**
      * Loads a polar world into an instance in a streaming manner.
@@ -86,6 +83,8 @@ public class PolarLoader implements IChunkLoader {
     private boolean parallel = false;
     private boolean loadLighting = true;
 
+    private int plainsBiomeId = 0; // Always 0 in minestom
+
     public PolarLoader(@NotNull Path path) throws IOException {
         this(path, Files.exists(path) ? PolarReader.read(Files.readAllBytes(path)) : new PolarWorld());
     }
@@ -114,6 +113,12 @@ public class PolarLoader implements IChunkLoader {
     @Contract("_ -> this")
     public @NotNull PolarLoader setWorldAccess(@NotNull PolarWorldAccess worldAccess) {
         this.worldAccess = worldAccess;
+
+        this.plainsBiomeId = this.worldAccess.getBiomeId(Biome.PLAINS.name());
+        if (this.plainsBiomeId == -1) {
+            throw new IllegalStateException("Plains biome not found");
+        }
+
         return this;
     }
 
@@ -234,10 +239,10 @@ public class PolarLoader implements IChunkLoader {
         var biomePalette = new int[rawBiomePalette.length];
         for (int i = 0; i < rawBiomePalette.length; i++) {
             biomePalette[i] = biomeReadCache.computeIfAbsent(rawBiomePalette[i], name -> {
-                var biomeId = BIOME_REGISTRY.getId(worldAccess.getBiome(name));
+                var biomeId = this.worldAccess.getBiomeId(name);
                 if (biomeId == -1) {
                     logger.error("Failed to find biome: {}", name);
-                    biomeId = PLAINS_BIOME_ID;
+                    biomeId = plainsBiomeId;
                 }
                 return biomeId;
             });
@@ -255,7 +260,7 @@ public class PolarLoader implements IChunkLoader {
                         if (paletteIndex >= biomePalette.length) {
                             logger.error("Invalid biome palette index. This is probably a corrupted world, " +
                                     "but it has been loaded with plains instead. No data has been written.");
-                            section.biomePalette().set(x, y, z, PLAINS_BIOME_ID);
+                            section.biomePalette().set(x, y, z, plainsBiomeId);
                         }
 
                         section.biomePalette().set(x, y, z, biomePalette[paletteIndex]);

@@ -11,6 +11,7 @@ import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.instance.Section;
 import net.minestom.server.network.NetworkBuffer;
 import net.minestom.server.utils.validate.Check;
+import net.minestom.server.world.biome.Biome;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -36,6 +37,7 @@ final class StreamingPolarLoader {
 
     private final Object2IntMap<String> blockToStateIdCache = new Object2IntOpenHashMap<>();
     private final Object2IntMap<String> biomeToIdCache = new Object2IntOpenHashMap<>();
+    private final int plainsBiomeId;
 
     StreamingPolarLoader(@NotNull InstanceContainer instance, @NotNull PolarDataConverter dataConverter,
                          @Nullable PolarWorldAccess worldAccess, boolean loadLighting) {
@@ -43,6 +45,12 @@ final class StreamingPolarLoader {
         this.dataConverter = dataConverter;
         this.worldAccess = worldAccess;
         this.loadLighting = loadLighting;
+
+        var searchWorldAccess = Objects.requireNonNullElse(worldAccess, PolarWorldAccess.DEFAULT);
+        this.plainsBiomeId = searchWorldAccess.getBiomeId(Biome.PLAINS.name());
+        if (this.plainsBiomeId == -1) {
+            throw new IllegalStateException("Plains biome not found");
+        }
     }
 
     public void loadAllSequential(@NotNull ReadableByteChannel channel, long fileSize) throws IOException {
@@ -280,11 +288,11 @@ final class StreamingPolarLoader {
         int[] biomePalette = new int[rawBiomePalette.length];
         for (int i = 0; i < rawBiomePalette.length; i++) {
             biomePalette[i] = biomeToIdCache.computeIfAbsent(rawBiomePalette[i], (String name) -> {
-                PolarWorldAccess worldAccess = Objects.requireNonNullElse(this.worldAccess, PolarWorldAccess.DEFAULT);
-                var biomeId = BIOME_REGISTRY.getId(worldAccess.getBiome(name));
+                PolarWorldAccess searchWorldAccess = Objects.requireNonNullElse(this.worldAccess, PolarWorldAccess.DEFAULT);
+                var biomeId = searchWorldAccess.getBiomeId(name);
                 if (biomeId == -1) {
                     logger.error("Failed to find biome: {}", name);
-                    biomeId = PLAINS_BIOME_ID;
+                    biomeId = this.plainsBiomeId;
                 }
                 return biomeId;
             });

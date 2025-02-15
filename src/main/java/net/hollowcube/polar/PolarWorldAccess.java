@@ -74,24 +74,18 @@ public interface PolarWorldAccess {
     }
 
     /**
-     * Called when a chunk is being loaded by a {@link PolarLoader} to convert biome ids back to instances.
+     * Called when a chunk is being loaded by a {@link PolarLoader} to convert biome namespaces back to id.
      * <br/><br/>
      * It is valid to change the behavior as long as a biome is returned in all cases (i.e. have a default).
      * <br/><br/>
      * Biomes are cached by the loader per loader instance, so there will only be a single call per loader, even over many chunks.
      *
      * @param name The namespace ID of the biome, eg minecraft:plains
-     * @return The biome instance
+     * @return The biome id
      */
-    default @NotNull DynamicRegistry.Key<Biome> getBiome(@NotNull String name) {
+    default int getBiomeId(@NotNull String name) {
         var biomeRegistry = MinecraftServer.getBiomeRegistry();
-        var key = DynamicRegistry.Key.<Biome>of(name);
-        var biome = biomeRegistry.get(key);
-        if (biome == null) {
-            PolarLoader.logger.error("Failed to find biome: {}", name);
-            return Biome.PLAINS;
-        }
-        return key;
+        return biomeRegistry.getId(DynamicRegistry.Key.of(name));
     }
 
     default @NotNull String getBiomeName(int id) {
