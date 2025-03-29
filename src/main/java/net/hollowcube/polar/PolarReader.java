@@ -2,11 +2,11 @@ package net.hollowcube.polar;
 
 import com.github.luben.zstd.Zstd;
 import net.hollowcube.polar.PolarSection.LightContent;
+import net.kyori.adventure.key.Key;
 import net.kyori.adventure.nbt.BinaryTag;
 import net.kyori.adventure.nbt.CompoundBinaryTag;
 import net.minestom.server.coordinate.CoordConversion;
 import net.minestom.server.network.NetworkBuffer;
-import net.minestom.server.utils.NamespaceID;
 import net.minestom.server.utils.nbt.BinaryTagReader;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -161,7 +161,7 @@ public class PolarReader {
             for (int i = 0; i < blockPalette.length; i++) {
                 if (blockPalette[i].contains("grass")) {
                     String strippedID = blockPalette[i].split("\\[")[0];
-                    if (NamespaceID.from(strippedID).path().equals("grass")) {
+                    if (Key.key(strippedID).value().equals("grass")) {
                         blockPalette[i] = "short_grass";
                     }
                 }
