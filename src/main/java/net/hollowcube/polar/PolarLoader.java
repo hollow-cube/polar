@@ -401,7 +401,7 @@ public class PolarLoader implements IChunkLoader {
                                 var block = chunk.getBlock(x, y, z, Block.Getter.Condition.CACHED);
                                 if (block == null) continue;
 
-                                var handlerId = block.handler() == null ? null : block.handler().getNamespaceId().asString();
+                                var handlerId = block.handler() == null ? null : block.handler().getKey().asString();
                                 if (handlerId != null || block.hasNbt()) {
                                     blockEntities.add(new PolarChunk.BlockEntity(
                                             x, y, z, handlerId, block.nbt()
