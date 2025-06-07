@@ -4,7 +4,7 @@ import net.minestom.server.MinecraftServer;
 import net.minestom.server.instance.Chunk;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.network.NetworkBuffer;
-import net.minestom.server.registry.DynamicRegistry;
+import net.minestom.server.registry.RegistryKey;
 import net.minestom.server.world.biome.Biome;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
@@ -85,7 +85,7 @@ public interface PolarWorldAccess {
      */
     default int getBiomeId(@NotNull String name) {
         var biomeRegistry = MinecraftServer.getBiomeRegistry();
-        return biomeRegistry.getId(DynamicRegistry.Key.of(name));
+        return biomeRegistry.getId(RegistryKey.unsafeOf(name));
     }
 
     default @NotNull String getBiomeName(int id) {
