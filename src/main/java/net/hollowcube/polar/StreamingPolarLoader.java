@@ -245,18 +245,18 @@ final class StreamingPolarLoader {
                     : (buffer.read(BOOLEAN) ? PolarSection.LightContent.PRESENT : PolarSection.LightContent.MISSING);
             byte[] blockLight = blockLightContent == PolarSection.LightContent.PRESENT ? buffer.read(LIGHT_DATA) : null;
             if (loadLighting && blockLightContent != PolarSection.LightContent.MISSING)
-                section.setBlockLight(getLightArray(blockLightContent, blockLight));
+                unsafeUpdateBlockLightArray(section.blockLight(), getLightArray(blockLightContent, blockLight));
 
             var skyLightContent = version >= PolarWorld.VERSION_IMPROVED_LIGHT
                     ? PolarSection.LightContent.VALUES[buffer.read(BYTE)]
                     : (buffer.read(BOOLEAN) ? PolarSection.LightContent.PRESENT : PolarSection.LightContent.MISSING);
             byte[] skyLight = skyLightContent == PolarSection.LightContent.PRESENT ? buffer.read(LIGHT_DATA) : null;
             if (loadLighting && skyLightContent != PolarSection.LightContent.MISSING)
-                section.setSkyLight(getLightArray(skyLightContent, skyLight));
+                unsafeUpdateSkyLightArray(section.skyLight(), getLightArray(skyLightContent, skyLight));
         } else if (buffer.read(BOOLEAN)) {
             if (loadLighting) {
-                section.setBlockLight(buffer.read(LIGHT_DATA));
-                section.setSkyLight(buffer.read(LIGHT_DATA));
+                unsafeUpdateBlockLightArray(section.blockLight(), buffer.read(LIGHT_DATA));
+                unsafeUpdateSkyLightArray(section.skyLight(), buffer.read(LIGHT_DATA));
             } else {
                 buffer.advanceRead(2048 * 2); // Skip the data
             }

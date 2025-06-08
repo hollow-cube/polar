@@ -271,9 +271,9 @@ public class PolarLoader implements IChunkLoader {
 
         // Light
         if (loadLighting && sectionData.blockLightContent() != LightContent.MISSING)
-            section.setBlockLight(getLightArray(sectionData.blockLightContent(), sectionData.blockLight()));
+            UnsafeOps.unsafeUpdateBlockLightArray(section.blockLight(), getLightArray(sectionData.blockLightContent(), sectionData.blockLight()));
         if (loadLighting && sectionData.skyLightContent() != LightContent.MISSING)
-            section.setSkyLight(getLightArray(sectionData.skyLightContent(), sectionData.skyLight()));
+            UnsafeOps.unsafeUpdateSkyLightArray(section.skyLight(), getLightArray(sectionData.skyLightContent(), sectionData.skyLight()));
     }
 
     static byte[] getLightArray(@NotNull LightContent content, byte @Nullable [] data) {
