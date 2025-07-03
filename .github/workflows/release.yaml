@@ -26,5 +26,5 @@ jobs:
         env:
           TAG_VERSION: ${{ github.ref_name }}
         run: |
-          ./gradlew publishToSonatype closeAndReleaseSonatypeStagingRepository -Peula=true
+          ./gradlew publishAggregationToCentralPortal
           echo "Version: ${TAG_VERSION}" >> $GITHUB_STEP_SUMMARY
