@@ -251,10 +251,10 @@ public class PolarLoader implements IChunkLoader {
             section.biomePalette().fill(biomePalette[0]);
         } else {
             final var paletteData = sectionData.biomeData();
-            for (int y = 0; y < CHUNK_SECTION_SIZE; y++) {
-                for (int z = 0; z < CHUNK_SECTION_SIZE; z++) {
-                    for (int x = 0; x < CHUNK_SECTION_SIZE; x++) {
-                        int index = x / 4 + (z / 4) * 4 + (y / 4) * 16;
+            for (int y = 0; y < CHUNK_SECTION_SIZE/4; y++) {
+                for (int z = 0; z < CHUNK_SECTION_SIZE/4; z++) {
+                    for (int x = 0; x < CHUNK_SECTION_SIZE/4; x++) {
+                        int index = x + (z) * 4 + (y) * 16;
 
                         var paletteIndex = paletteData[index];
                         if (paletteIndex >= biomePalette.length) {
