@@ -3,7 +3,7 @@ plugins {
 
     `maven-publish`
     signing
-    alias(libs.plugins.nexuspublish)
+    alias(libs.plugins.nmcp)
 }
 
 group = "dev.hollowcube"
@@ -11,18 +11,14 @@ version = System.getenv("TAG_VERSION") ?: "dev"
 description = "Fast and small world format for Minestom"
 
 repositories {
-    mavenLocal()
     mavenCentral()
-    maven(url = "https://jitpack.io")
 }
 
 dependencies {
-    val minestom = libs.minestom
-
-    compileOnly(minestom)
+    compileOnly(libs.minestom)
     implementation(libs.zstd)
-    // Fastutil is only included because minestom already uses it, otherwise it is a crazy dependency
-    // for how it is used in this project.
+    // Fastutil is only included because minestom already uses it,
+    // otherwise it is a crazy dependency for how it is used in this project.
     implementation(libs.fastutil)
 
     testImplementation("ch.qos.logback:logback-core:1.4.7")
@@ -30,15 +26,14 @@ dependencies {
 
     testImplementation(platform("org.junit:junit-bom:5.9.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")
-    testImplementation(minestom)
+    testImplementation(libs.minestom)
 }
 
 java {
     withSourcesJar()
     withJavadocJar()
 
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
 }
 
 tasks.test {
@@ -46,18 +41,14 @@ tasks.test {
     useJUnitPlatform()
 }
 
-nexusPublishing {
-    this.packageGroup.set("dev.hollowcube")
-
-    repositories.sonatype {
-        nexusUrl.set(uri("https://s01.oss.sonatype.org/service/local/"))
-        snapshotRepositoryUrl.set(uri("https://s01.oss.sonatype.org/content/repositories/snapshots/"))
-
-        if (System.getenv("SONATYPE_USERNAME") != null) {
-            username.set(System.getenv("SONATYPE_USERNAME"))
-            password.set(System.getenv("SONATYPE_PASSWORD"))
-        }
+nmcpAggregation {
+    centralPortal {
+        username = System.getenv("SONATYPE_USERNAME")
+        password = System.getenv("SONATYPE_PASSWORD")
+        publishingType = if ("dev" in project.version.toString()) "USER_MANAGED" else "AUTOMATIC"
     }
+
+    publishAllProjectsProbablyBreakingProjectIsolation()
 }
 
 publishing.publications.create<MavenPublication>("maven") {
