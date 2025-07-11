@@ -1,6 +1,7 @@
 package net.hollowcube.polar;
 
 import com.github.luben.zstd.Zstd;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import net.minestom.server.MinecraftServer;
@@ -9,6 +10,7 @@ import net.minestom.server.command.builder.exception.ArgumentSyntaxException;
 import net.minestom.server.coordinate.CoordConversion;
 import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.instance.Section;
+import net.minestom.server.instance.block.Block;
 import net.minestom.server.network.NetworkBuffer;
 import net.minestom.server.utils.validate.Check;
 import net.minestom.server.world.biome.Biome;
@@ -131,7 +133,7 @@ final class StreamingPolarLoader {
         // Load block data
         synchronized (chunk) {
             for (int sectionY = minSection; sectionY <= maxSection; sectionY++) {
-                readSection(buffer, chunk.getSection(sectionY));
+                readSection(buffer, chunk.getSection(sectionY), sectionY, chunkEntries);
             }
 
             // Load block entities
@@ -168,7 +170,7 @@ final class StreamingPolarLoader {
         }
     }
 
-    private void readSection(@NotNull NetworkBuffer buffer, @NotNull Section section) {
+    private void readSection(@NotNull NetworkBuffer buffer, @NotNull Section section, int sectionY, @Nullable Int2ObjectMap<Block> chunkEntires) {
         if (buffer.read(BOOLEAN)) return; // Empty section
 
         int[] blockPalette = readBlockPalette(buffer);
@@ -188,7 +190,15 @@ final class StreamingPolarLoader {
                 for (int z = 0; z < CHUNK_SECTION_SIZE; z++) {
                     for (int x = 0; x < CHUNK_SECTION_SIZE; x++) {
                         int index = y * CHUNK_SECTION_SIZE * CHUNK_SECTION_SIZE + z * CHUNK_SECTION_SIZE + x;
-                        section.blockPalette().set(x, y, z, blockPalette[blockData[index]]);
+                        int blockStateId = blockPalette[blockData[index]];
+                        section.blockPalette().set(x, y, z, blockStateId);
+
+                        // Vanilla block entities must be tracked in the chunk entries so they are sent to the client.
+                        var block = Block.fromStateId(blockStateId);
+                        if (chunkEntires != null && block.registry().isBlockEntity()) {
+                            int chunkY = sectionY * CHUNK_SECTION_SIZE + y;
+                            chunkEntires.putIfAbsent(CoordConversion.chunkBlockIndex(x, chunkY, z), block);
+                        }
                     }
                 }
             }
