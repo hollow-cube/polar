@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 final class UnsafeOps {
     private static final MethodHandle CACHE_CHUNK_HANDLE;
+    private static final MethodHandle CHUNK_ON_LOAD_HANDLE;
     private static final MethodHandle NEEDS_HEIGHTMAP_REFRESH_SETTER;
     private static final MethodHandle DYNAMIC_CHUNK_ENTRIES_GETTER;
     private static final MethodHandle DYNAMIC_CHUNK_TICKABLE_MAP_GETTER;
@@ -31,6 +32,14 @@ final class UnsafeOps {
     static void unsafeCacheChunk(@NotNull InstanceContainer instance, @NotNull Chunk chunk) {
         try {
             CACHE_CHUNK_HANDLE.invokeExact(instance, chunk);
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
+        }
+    }
+
+    static void unsafeChunkOnLoad(@NotNull Chunk chunk) {
+        try {
+            CHUNK_ON_LOAD_HANDLE.invokeExact(chunk);
         } catch (Throwable t) {
             throw new RuntimeException(t);
         }
@@ -102,12 +111,14 @@ final class UnsafeOps {
         try {
             var lookup = MethodHandles.privateLookupIn(DynamicChunk.class, MethodHandles.lookup());
             NEEDS_HEIGHTMAP_REFRESH_SETTER = lookup.unreflectSetter(DynamicChunk.class
-                    .getDeclaredField("needsCompleteHeightmapRefresh"));
+                                                                            .getDeclaredField(
+                                                                                    "needsCompleteHeightmapRefresh"));
             DYNAMIC_CHUNK_ENTRIES_GETTER = lookup.unreflectGetter(DynamicChunk.class
-                    .getDeclaredField("entries"));
+                                                                          .getDeclaredField("entries"));
             DYNAMIC_CHUNK_TICKABLE_MAP_GETTER = lookup.unreflectGetter(DynamicChunk.class
-                    .getDeclaredField("tickableMap"));
-        } catch (IllegalAccessException | NoSuchFieldException e) {
+                                                                               .getDeclaredField("tickableMap"));
+            CHUNK_ON_LOAD_HANDLE = lookup.unreflect(Chunk.class.getDeclaredMethod("onLoad"));
+        } catch (IllegalAccessException | NoSuchFieldException | NoSuchMethodException e) {
             throw new RuntimeException(e);
         }
 
@@ -115,7 +126,8 @@ final class UnsafeOps {
             var blockLight = Class.forName("net.minestom.server.instance.light.BlockLight");
             var lookup = MethodHandles.privateLookupIn(blockLight, MethodHandles.lookup());
             BLOCK_LIGHT_CONTENT_SETTER = lookup.unreflectSetter(blockLight.getDeclaredField("content"));
-            BLOCK_LIGHT_CONTENT_PROPAGATION_SETTER = lookup.unreflectSetter(blockLight.getDeclaredField("contentPropagation"));
+            BLOCK_LIGHT_CONTENT_PROPAGATION_SETTER = lookup.unreflectSetter(
+                    blockLight.getDeclaredField("contentPropagation"));
             BLOCK_LIGHT_IS_VALID_BORDERS_SETTER = lookup.unreflectSetter(blockLight.getDeclaredField("isValidBorders"));
             BLOCK_LIGHT_NEEDS_SEND_GETTER = lookup.unreflectGetter(blockLight.getDeclaredField("needsSend"));
         } catch (NoSuchFieldException | ClassNotFoundException | IllegalAccessException e) {
@@ -125,7 +137,8 @@ final class UnsafeOps {
             var skyLight = Class.forName("net.minestom.server.instance.light.SkyLight");
             var lookup = MethodHandles.privateLookupIn(skyLight, MethodHandles.lookup());
             SKY_LIGHT_CONTENT_SETTER = lookup.unreflectSetter(skyLight.getDeclaredField("content"));
-            SKY_LIGHT_CONTENT_PROPAGATION_SETTER = lookup.unreflectSetter(skyLight.getDeclaredField("contentPropagation"));
+            SKY_LIGHT_CONTENT_PROPAGATION_SETTER = lookup.unreflectSetter(
+                    skyLight.getDeclaredField("contentPropagation"));
             SKY_LIGHT_IS_VALID_BORDERS_SETTER = lookup.unreflectSetter(skyLight.getDeclaredField("isValidBorders"));
             SKY_LIGHT_NEEDS_SEND_GETTER = lookup.unreflectGetter(skyLight.getDeclaredField("needsSend"));
         } catch (NoSuchFieldException | ClassNotFoundException | IllegalAccessException e) {

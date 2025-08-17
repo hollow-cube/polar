@@ -41,8 +41,10 @@ final class StreamingPolarLoader {
     private final Object2IntMap<String> biomeToIdCache = new Object2IntOpenHashMap<>();
     private final int plainsBiomeId;
 
-    StreamingPolarLoader(@NotNull InstanceContainer instance, @NotNull PolarDataConverter dataConverter,
-                         @Nullable PolarWorldAccess worldAccess, boolean loadLighting) {
+    StreamingPolarLoader(
+            @NotNull InstanceContainer instance, @NotNull PolarDataConverter dataConverter,
+            @Nullable PolarWorldAccess worldAccess, boolean loadLighting
+    ) {
         this.instance = instance;
         this.dataConverter = dataConverter;
         this.worldAccess = worldAccess;
@@ -111,7 +113,8 @@ final class StreamingPolarLoader {
                 final var dst = NetworkBuffer.staticBuffer(compressedDataLength, MinecraftServer.process());
                 final var srcAddress = networkBufferAddress(buffer) + buffer.readIndex();
                 final var dstAddress = networkBufferAddress(dst);
-                long count = Zstd.decompressUnsafe(dstAddress, compressedDataLength, srcAddress, buffer.readableBytes());
+                long count = Zstd.decompressUnsafe(dstAddress, compressedDataLength, srcAddress,
+                                                   buffer.readableBytes());
                 if (Zstd.isError(count)) {
                     throw new RuntimeException("decompression failed: " + Zstd.getErrorName(count));
                 }
@@ -142,7 +145,8 @@ final class StreamingPolarLoader {
                 final var blockEntity = readBlockEntity(dataConverter, version, dataVersion, buffer);
                 if (chunkEntries != null && chunkTickables != null) {
                     final var block = createBlockEntity(chunk, blockEntity);
-                    final int index = CoordConversion.chunkBlockIndex(blockEntity.x(), blockEntity.y(), blockEntity.z());
+                    final int index = CoordConversion.chunkBlockIndex(
+                            blockEntity.x(), blockEntity.y(), blockEntity.z());
                     chunkEntries.put(index, block);
                     if (block.handler() != null && block.handler().isTickable())
                         chunkTickables.put(index, block);
@@ -157,6 +161,7 @@ final class StreamingPolarLoader {
             else unsafeSetNeedsCompleteHeightmapRefresh(chunk, true);
         }
 
+        unsafeChunkOnLoad(chunk);
         unsafeCacheChunk(instance, chunk);
 
         // Load user data
@@ -170,7 +175,10 @@ final class StreamingPolarLoader {
         }
     }
 
-    private void readSection(@NotNull NetworkBuffer buffer, @NotNull Section section, int sectionY, @Nullable Int2ObjectMap<Block> chunkEntires) {
+    private void readSection(
+            @NotNull NetworkBuffer buffer, @NotNull Section section, int sectionY,
+            @Nullable Int2ObjectMap<Block> chunkEntires
+    ) {
         if (buffer.read(BOOLEAN)) return; // Empty section
 
         int[] blockPalette = readBlockPalette(buffer);
@@ -202,20 +210,20 @@ final class StreamingPolarLoader {
                     }
                 }
             }
-//            section.blockPalette().setAll((x, y, z) -> {
-//                int index = y * CHUNK_SECTION_SIZE * CHUNK_SECTION_SIZE + z * CHUNK_SECTION_SIZE + x;
-//                return blockPalette[blockData[index]];
-//            });
+            //            section.blockPalette().setAll((x, y, z) -> {
+            //                int index = y * CHUNK_SECTION_SIZE * CHUNK_SECTION_SIZE + z * CHUNK_SECTION_SIZE + x;
+            //                return blockPalette[blockData[index]];
+            //            });
 
             // Below was some previous logic, leaving it around for now I would like to fix it up.
-//            System.out.println(Arrays.toString(blockPalette));
-//            var rawBlockData = buffer.read(LONG_ARRAY);
-//            var bitsPerEntry = (int) Math.ceil(Math.log(blockPalette.length) / Math.log(2));
-//
-////            int count = computeCount(blockPalette, rawBlockData, bitsPerEntry);
-//            int count = 16 * 16 * 16;
-//            directReplaceInnerPaletteBlock(section.blockPalette(), (byte) bitsPerEntry, count,
-//                    blockPalette, rawBlockData);
+            //            System.out.println(Arrays.toString(blockPalette));
+            //            var rawBlockData = buffer.read(LONG_ARRAY);
+            //            var bitsPerEntry = (int) Math.ceil(Math.log(blockPalette.length) / Math.log(2));
+            //
+            ////            int count = computeCount(blockPalette, rawBlockData, bitsPerEntry);
+            //            int count = 16 * 16 * 16;
+            //            directReplaceInnerPaletteBlock(section.blockPalette(), (byte) bitsPerEntry, count,
+            //                    blockPalette, rawBlockData);
         }
 
         int[] biomePalette = readBiomePalette(buffer);
@@ -236,17 +244,17 @@ final class StreamingPolarLoader {
                     }
                 }
             }
-//            section.biomePalette().setAll((x, y, z) -> {
-//                int index = x / 4 + (z / 4) * 4 + (y / 4) * 16;
-//                return biomePalette[biomeData[index]];
-//            });
+            //            section.biomePalette().setAll((x, y, z) -> {
+            //                int index = x / 4 + (z / 4) * 4 + (y / 4) * 16;
+            //                return biomePalette[biomeData[index]];
+            //            });
 
-//            var rawBiomeData = buffer.read(LONG_ARRAY);
-//            var bitsPerEntry = (int) Math.ceil(Math.log(biomePalette.length) / Math.log(2));
-//            // Biome count is irrelevant to the client. Though it might be worth computing it anyway here
-//            // in case a server implementation uses it for anything.
-//            directReplaceInnerPaletteBiome(section.biomePalette(), (byte) bitsPerEntry, 4 * 4 * 4,
-//                    biomePalette, rawBiomeData);
+            //            var rawBiomeData = buffer.read(LONG_ARRAY);
+            //            var bitsPerEntry = (int) Math.ceil(Math.log(biomePalette.length) / Math.log(2));
+            //            // Biome count is irrelevant to the client. Though it might be worth computing it anyway here
+            //            // in case a server implementation uses it for anything.
+            //            directReplaceInnerPaletteBiome(section.biomePalette(), (byte) bitsPerEntry, 4 * 4 * 4,
+            //                    biomePalette, rawBiomeData);
         }
 
         if (version > PolarWorld.VERSION_UNIFIED_LIGHT) {
@@ -298,7 +306,8 @@ final class StreamingPolarLoader {
         int[] biomePalette = new int[rawBiomePalette.length];
         for (int i = 0; i < rawBiomePalette.length; i++) {
             biomePalette[i] = biomeToIdCache.computeIfAbsent(rawBiomePalette[i], (String name) -> {
-                PolarWorldAccess searchWorldAccess = Objects.requireNonNullElse(this.worldAccess, PolarWorldAccess.DEFAULT);
+                PolarWorldAccess searchWorldAccess = Objects.requireNonNullElse(this.worldAccess,
+                                                                                PolarWorldAccess.DEFAULT);
                 var biomeId = searchWorldAccess.getBiomeId(name);
                 if (biomeId == -1) {
                     logger.error("Failed to find biome: {}", name);
