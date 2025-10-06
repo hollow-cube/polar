@@ -3,14 +3,13 @@ package net.hollowcube.polar;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.instance.block.Block;
-import net.minestom.server.registry.DynamicRegistry;
+import net.minestom.server.registry.RegistryKey;
 import net.minestom.server.world.DimensionType;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 class TestNonStandardHeight {
     static final DimensionType dimensionType = DimensionType.builder()
@@ -18,7 +17,7 @@ class TestNonStandardHeight {
             .height(4064)
             .build();
 
-    static final DynamicRegistry.Key<DimensionType> dimensionTypeKey;
+    static final RegistryKey<DimensionType> dimensionTypeKey;
 
     static {
         MinecraftServer.init();
