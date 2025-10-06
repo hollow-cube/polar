@@ -35,7 +35,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import static net.minestom.server.instance.Chunk.CHUNK_SECTION_SIZE;
 
 @SuppressWarnings("UnstableApiUsage")
-public class PolarLoader implements IChunkLoader {
+public class PolarLoader implements ChunkLoader {
     static final Logger logger = LoggerFactory.getLogger(PolarLoader.class);
     private static final BlockManager BLOCK_MANAGER = MinecraftServer.getBlockManager();
     private static final ExceptionManager EXCEPTION_HANDLER = MinecraftServer.getExceptionManager();

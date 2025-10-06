@@ -11,6 +11,16 @@ version = System.getenv("TAG_VERSION") ?: "dev"
 description = "Fast and small world format for Minestom"
 
 repositories {
+    val centralLibs = listOf(libs.minestom).mapNotNull { it.get().version }
+    if (centralLibs.any { it.endsWith("-SNAPSHOT") }) {
+        maven(url = "https://central.sonatype.com/repository/maven-snapshots/") {
+            content {
+                includeGroup("net.minestom")
+                includeGroup("net.kyori")
+            }
+        }
+    }
+
     mavenCentral()
 }
 
@@ -33,7 +43,7 @@ java {
     withSourcesJar()
     withJavadocJar()
 
-    toolchain.languageVersion = JavaLanguageVersion.of(21)
+    toolchain.languageVersion = JavaLanguageVersion.of(25)
 }
 
 tasks.test {
