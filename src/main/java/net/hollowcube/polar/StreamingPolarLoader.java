@@ -134,7 +134,8 @@ final class StreamingPolarLoader {
         var chunkTickables = unsafeGetTickableMap(chunk);
 
         // Load block data
-        synchronized (chunk) {
+        chunk.lockWriteLock();
+        try {
             for (int sectionY = minSection; sectionY <= maxSection; sectionY++) {
                 readSection(buffer, chunk.getSection(sectionY), sectionY, chunkEntries);
             }
@@ -159,6 +160,8 @@ final class StreamingPolarLoader {
             int[][] heightmaps = readHeightmapData(buffer, worldAccess == null);
             if (worldAccess != null) worldAccess.loadHeightmaps(chunk, heightmaps);
             else unsafeSetNeedsCompleteHeightmapRefresh(chunk, true);
+        } finally {
+            chunk.unlockWriteLock();
         }
 
         unsafeChunkOnLoad(chunk);
