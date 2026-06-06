@@ -30,6 +30,7 @@ dependencies {
     // Fastutil is only included because minestom already uses it,
     // otherwise it is a crazy dependency for how it is used in this project.
     implementation(libs.fastutil)
+    compileOnly("org.slf4j:slf4j-api:2.0.18")
 
     testImplementation("ch.qos.logback:logback-core:1.4.7")
     testImplementation("ch.qos.logback:logback-classic:1.4.7")
