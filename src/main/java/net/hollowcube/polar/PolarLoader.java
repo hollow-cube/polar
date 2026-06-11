@@ -175,9 +175,8 @@ public class PolarLoader implements ChunkLoader {
 
         // Load the chunk
         var chunk = instance.getChunkSupplier().createChunk(instance, chunkX, chunkZ);
-        synchronized (chunk) {
-            //todo replace with java locks, not synchronized
-            //   actually on second thought, do we really even need to lock the chunk? it is a local variable still
+        chunk.lockWriteLock();
+        try {
             int sectionY = chunk.getMinSection();
             for (var sectionData : chunkData.sections()) {
                 if (sectionData.isEmpty()) {
@@ -200,6 +199,8 @@ public class PolarLoader implements ChunkLoader {
             if (userData.length > 0) {
                 worldAccess.loadChunkData(chunk, NetworkBuffer.wrap(userData, 0, userData.length));
             }
+        } finally {
+            chunk.unlockWriteLock();
         }
 
         return chunk;
@@ -364,7 +365,8 @@ public class PolarLoader implements ChunkLoader {
 
         var userData = new byte[0];
 
-        synchronized (chunk) {
+        chunk.lockWriteLock();
+        try {
             for (int i = 0; i < sections.length; i++) {
                 int sectionY = i + chunk.getMinSection();
                 var section = chunk.getSection(sectionY);
@@ -441,6 +443,8 @@ public class PolarLoader implements ChunkLoader {
             worldAccess.saveHeightmaps(chunk, heightmaps);
 
             userData = NetworkBuffer.makeArray(b -> worldAccess.saveChunkData(chunk, b));
+        } finally {
+            chunk.unlockWriteLock();
         }
 
         worldDataLock.writeLock().lock();

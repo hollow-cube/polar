@@ -26,6 +26,7 @@ repositories {
 
 dependencies {
     compileOnly(libs.minestom)
+    compileOnly("org.slf4j:slf4j-api:2.0.17")
     implementation(libs.zstd)
     // Fastutil is only included because minestom already uses it,
     // otherwise it is a crazy dependency for how it is used in this project.
