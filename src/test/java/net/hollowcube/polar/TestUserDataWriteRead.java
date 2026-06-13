@@ -26,7 +26,11 @@ class TestUserDataWriteRead {
         Arrays.fill(emptySections, new PolarSection());
 
         var heightmaps = new int[PolarChunk.MAX_HEIGHTMAPS][];
-        world.updateChunkAt(0, 0, new PolarChunk(0, 0, emptySections, List.of(), heightmaps, new byte[0]));
+        world.updateChunkAt(
+            0,
+            0,
+            new PolarChunk(0, 0, emptySections, List.of(), heightmaps, new byte[0])
+        );
 
         var wa = new UpdateTimeWorldAccess();
         var loader = new PolarLoader(world).setWorldAccess(wa);
@@ -36,7 +40,9 @@ class TestUserDataWriteRead {
         loader.saveChunk(chunk);
 
         var newPolarChunk = world.chunkAt(0, 0);
-        var savedTime = NetworkBuffer.wrap(newPolarChunk.userData(), 0, newPolarChunk.userData().length).read(NetworkBuffer.LONG);
+        var savedTime = NetworkBuffer
+            .wrap(newPolarChunk.userData(), 0, newPolarChunk.userData().length)
+            .read(NetworkBuffer.LONG);
         assertEquals(wa.saveTime, savedTime);
 
         loader.loadChunk(instance, 0, 0);

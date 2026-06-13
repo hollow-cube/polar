@@ -57,8 +57,16 @@ public class TestBigPaletteReadWrite {
         var worldBytes = PolarWriter.write(loader.world());
 
         var loadInstance = new InstanceContainer(UUID.randomUUID(), DimensionType.OVERWORLD);
-        PolarLoader.streamLoad(loadInstance, Channels.newChannel(new ByteArrayInputStream(worldBytes)),
-                worldBytes.length, null, null, false).join();
+        PolarLoader
+            .streamLoad(
+                loadInstance,
+                Channels.newChannel(new ByteArrayInputStream(worldBytes)),
+                worldBytes.length,
+                null,
+                null,
+                false
+            )
+            .join();
 
         random = new Random(22);
         for (int y = 0; y < 16; y++) {

@@ -53,13 +53,19 @@ public class PolarLoader implements ChunkLoader {
      */
     @ApiStatus.Experimental
     public static @NotNull CompletableFuture<Void> streamLoad(
-            @NotNull InstanceContainer instance, @NotNull ReadableByteChannel is, long fileSize,
-            @Nullable PolarDataConverter dataConverter,
-            @Nullable PolarWorldAccess worldAccess,
-            boolean loadLighting) {
-        final var loader = new StreamingPolarLoader(instance,
-                Objects.requireNonNullElse(dataConverter, PolarDataConverter.NOOP),
-                worldAccess, loadLighting);
+        @NotNull InstanceContainer instance,
+        @NotNull ReadableByteChannel is,
+        long fileSize,
+        @Nullable PolarDataConverter dataConverter,
+        @Nullable PolarWorldAccess worldAccess,
+        boolean loadLighting
+    ) {
+        final var loader = new StreamingPolarLoader(
+            instance,
+            Objects.requireNonNullElse(dataConverter, PolarDataConverter.NOOP),
+            worldAccess,
+            loadLighting
+        );
         final var future = new CompletableFuture<Void>();
         Thread.startVirtualThread(() -> {
             try {
@@ -86,7 +92,10 @@ public class PolarLoader implements ChunkLoader {
     private int plainsBiomeId = 0; // Always 0 in minestom
 
     public PolarLoader(@NotNull Path path) throws IOException {
-        this(path, Files.exists(path) ? PolarReader.read(Files.readAllBytes(path)) : new PolarWorld());
+        this(
+            path,
+            Files.exists(path) ? PolarReader.read(Files.readAllBytes(path)) : new PolarWorld()
+        );
     }
 
     public PolarLoader(@NotNull Path savePath, @NotNull PolarWorld worldData) {
@@ -145,7 +154,6 @@ public class PolarLoader implements ChunkLoader {
     }
 
     // Loading
-
 
     @Override
     public boolean supportsParallelLoading() {
@@ -217,7 +225,11 @@ public class PolarLoader implements ChunkLoader {
                 //noinspection deprecation
                 blockPalette[i] = ArgumentBlockState.staticParse(rawBlockPalette[i]);
             } catch (ArgumentSyntaxException e) {
-                logger.error("Failed to parse block state: {} ({})", rawBlockPalette[i], e.getMessage());
+                logger.error(
+                    "Failed to parse block state: {} ({})",
+                    rawBlockPalette[i],
+                    e.getMessage()
+                );
                 blockPalette[i] = Block.AIR;
             }
         }
@@ -228,8 +240,15 @@ public class PolarLoader implements ChunkLoader {
             for (int y = 0; y < CHUNK_SECTION_SIZE; y++) {
                 for (int z = 0; z < CHUNK_SECTION_SIZE; z++) {
                     for (int x = 0; x < CHUNK_SECTION_SIZE; x++) {
-                        int index = y * CHUNK_SECTION_SIZE * CHUNK_SECTION_SIZE + z * CHUNK_SECTION_SIZE + x;
-                        section.blockPalette().set(x, y, z, blockPalette[paletteData[index]].stateId());
+                        int index = y * CHUNK_SECTION_SIZE * CHUNK_SECTION_SIZE
+                            + z * CHUNK_SECTION_SIZE
+                            + x;
+                        section.blockPalette().set(
+                            x,
+                            y,
+                            z,
+                            blockPalette[paletteData[index]].stateId()
+                        );
                     }
                 }
             }
@@ -252,15 +271,17 @@ public class PolarLoader implements ChunkLoader {
             section.biomePalette().fill(biomePalette[0]);
         } else {
             final var paletteData = sectionData.biomeData();
-            for (int y = 0; y < CHUNK_SECTION_SIZE/4; y++) {
-                for (int z = 0; z < CHUNK_SECTION_SIZE/4; z++) {
-                    for (int x = 0; x < CHUNK_SECTION_SIZE/4; x++) {
+            for (int y = 0; y < CHUNK_SECTION_SIZE / 4; y++) {
+                for (int z = 0; z < CHUNK_SECTION_SIZE / 4; z++) {
+                    for (int x = 0; x < CHUNK_SECTION_SIZE / 4; x++) {
                         int index = x + (z) * 4 + (y) * 16;
 
                         var paletteIndex = paletteData[index];
                         if (paletteIndex >= biomePalette.length) {
-                            logger.error("Invalid biome palette index. This is probably a corrupted world, " +
-                                    "but it has been loaded with plains instead. No data has been written.");
+                            logger.error(
+                                "Invalid biome palette index. This is probably a corrupted world, "
+                                    + "but it has been loaded with plains instead. No data has been written."
+                            );
                             section.biomePalette().set(x, y, z, plainsBiomeId);
                         }
 
@@ -272,9 +293,15 @@ public class PolarLoader implements ChunkLoader {
 
         // Light
         if (loadLighting && sectionData.blockLightContent() != LightContent.MISSING)
-            UnsafeOps.unsafeUpdateBlockLightArray(section.blockLight(), getLightArray(sectionData.blockLightContent(), sectionData.blockLight()));
+            UnsafeOps.unsafeUpdateBlockLightArray(
+                section.blockLight(),
+                getLightArray(sectionData.blockLightContent(), sectionData.blockLight())
+            );
         if (loadLighting && sectionData.skyLightContent() != LightContent.MISSING)
-            UnsafeOps.unsafeUpdateSkyLightArray(section.skyLight(), getLightArray(sectionData.skyLightContent(), sectionData.skyLight()));
+            UnsafeOps.unsafeUpdateSkyLightArray(
+                section.skyLight(),
+                getLightArray(sectionData.skyLightContent(), sectionData.skyLight())
+            );
     }
 
     static byte[] getLightArray(@NotNull LightContent content, byte @Nullable [] data) {
@@ -286,13 +313,20 @@ public class PolarLoader implements ChunkLoader {
         };
     }
 
-    static @NotNull Block createBlockEntity(@NotNull Chunk chunk, @NotNull PolarChunk.BlockEntity blockEntity) {
+    static @NotNull Block createBlockEntity(
+        @NotNull Chunk chunk,
+        @NotNull PolarChunk.BlockEntity blockEntity
+    ) {
         // Fetch the block type, we can ignore Handler/NBT since we are about to replace it
-        var block = chunk.getBlock(blockEntity.x(), blockEntity.y(), blockEntity.z(), Block.Getter.Condition.TYPE);
+        var block = chunk.getBlock(
+            blockEntity.x(),
+            blockEntity.y(),
+            blockEntity.z(),
+            Block.Getter.Condition.TYPE
+        );
         if (blockEntity.id() != null)
             block = block.withHandler(BLOCK_MANAGER.getHandlerOrDummy(blockEntity.id()));
-        if (blockEntity.data() != null)
-            block = block.withNbt(blockEntity.data());
+        if (blockEntity.data() != null) block = block.withNbt(blockEntity.data());
         return block;
     }
 
@@ -303,7 +337,6 @@ public class PolarLoader implements ChunkLoader {
 
     // Unloading/saving
 
-
     @Override
     public boolean supportsParallelSaving() {
         return parallel;
@@ -312,13 +345,16 @@ public class PolarLoader implements ChunkLoader {
     @Override
     public void saveInstance(@NotNull Instance instance) {
         worldData.userData(NetworkBuffer.makeArray(b -> worldAccess.saveWorldData(instance, b)));
-        DimensionType dimensionType = MinecraftServer.getDimensionTypeRegistry().get(instance.getDimensionType());
+        DimensionType dimensionType = MinecraftServer.getDimensionTypeRegistry().get(
+            instance.getDimensionType()
+        );
 
         byte minSection = (byte) (dimensionType.minY() / CHUNK_SECTION_SIZE);
 
         byte maxSection = (byte) (dimensionType.maxY() / CHUNK_SECTION_SIZE - 1);
 
-        if (minSection == this.worldData.minSection() && this.worldData.maxSection() == maxSection) {
+        if (minSection == this.worldData.minSection()
+            && this.worldData.maxSection() == maxSection) {
             saveChunks(instance.getChunks());
             return;
         }
@@ -347,14 +383,22 @@ public class PolarLoader implements ChunkLoader {
         // Write the file to disk
         if (savePath != null) {
             try {
-                Files.write(savePath, PolarWriter.write(worldData), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+                Files.write(
+                    savePath,
+                    PolarWriter.write(worldData),
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.TRUNCATE_EXISTING
+                );
             } catch (IOException e) {
                 EXCEPTION_HANDLER.handleException(new RuntimeException("Failed to save world", e));
             }
         }
     }
 
-    private void updateChunkData(@NotNull Short2ObjectMap<String> blockCache, @NotNull Chunk chunk) {
+    private void updateChunkData(
+        @NotNull Short2ObjectMap<String> blockCache,
+        @NotNull Chunk chunk
+    ) {
         var dimension = chunk.getInstance().getCachedDimensionType();
 
         var blockEntities = new ArrayList<PolarChunk.BlockEntity>();
@@ -384,7 +428,10 @@ public class PolarLoader implements ChunkLoader {
                         final int blockIndex = x + sectionLocalY * 16 * 16 + z * 16;
 
                         // Section palette
-                        var namespace = blockCache.computeIfAbsent((short) blockStateId, unused -> blockToString(Block.fromStateId(blockStateId)));
+                        var namespace = blockCache.computeIfAbsent(
+                            (short) blockStateId,
+                            _ -> blockToString(Block.fromStateId(blockStateId))
+                        );
                         int paletteId = blockPalette.indexOf(namespace);
                         if (paletteId == -1) {
                             paletteId = blockPalette.size();
@@ -396,18 +443,21 @@ public class PolarLoader implements ChunkLoader {
                     blockData = localBlockData;
 
                     // Block entities
-                    for (int sectionLocalY = 0; sectionLocalY < CHUNK_SECTION_SIZE; sectionLocalY++) {
+                    for (int sectionLocalY = 0; sectionLocalY
+                        < CHUNK_SECTION_SIZE; sectionLocalY++) {
                         for (int z = 0; z < Chunk.CHUNK_SIZE_Z; z++) {
                             for (int x = 0; x < Chunk.CHUNK_SIZE_X; x++) {
                                 int y = sectionLocalY + sectionY * CHUNK_SECTION_SIZE;
                                 var block = chunk.getBlock(x, y, z, Block.Getter.Condition.CACHED);
                                 if (block == null) continue;
 
-                                var handlerId = block.handler() == null ? null : block.handler().getKey().asString();
+                                var handlerId = block.handler() == null
+                                    ? null
+                                    : block.handler().getKey().asString();
                                 if (handlerId != null || block.hasNbt()) {
-                                    blockEntities.add(new PolarChunk.BlockEntity(
-                                            x, y, z, handlerId, block.nbt()
-                                    ));
+                                    blockEntities.add(
+                                        new PolarChunk.BlockEntity(x, y, z, handlerId, block.nbt())
+                                    );
                                 }
                             }
                         }
@@ -433,10 +483,14 @@ public class PolarLoader implements ChunkLoader {
                 byte[] skyLight = section.skyLight().array();
 
                 sections[i] = new PolarSection(
-                        blockPalette.toArray(new String[0]), blockData,
-                        biomePalette.toArray(new String[0]), biomeData,
-                        getLightContent(blockLight), blockLight,
-                        getLightContent(skyLight), skyLight
+                    blockPalette.toArray(new String[0]),
+                    blockData,
+                    biomePalette.toArray(new String[0]),
+                    biomeData,
+                    getLightContent(blockLight),
+                    blockLight,
+                    getLightContent(skyLight),
+                    skyLight
                 );
             }
 
@@ -449,23 +503,24 @@ public class PolarLoader implements ChunkLoader {
 
         worldDataLock.writeLock().lock();
         worldData.updateChunkAt(
+            chunk.getChunkX(),
+            chunk.getChunkZ(),
+            new PolarChunk(
                 chunk.getChunkX(),
                 chunk.getChunkZ(),
-                new PolarChunk(
-                        chunk.getChunkX(),
-                        chunk.getChunkZ(),
-                        sections,
-                        blockEntities,
-                        heightmaps,
-                        userData
-                )
+                sections,
+                blockEntities,
+                heightmaps,
+                userData
+            )
         );
         worldDataLock.writeLock().unlock();
     }
 
     private @NotNull LightContent getLightContent(byte @Nullable [] data) {
         if (data == null) return LightContent.MISSING;
-        if (data.length == 0 || Arrays.equals(data, LightCompute.EMPTY_CONTENT)) return LightContent.EMPTY;
+        if (data.length == 0 || Arrays.equals(data, LightCompute.EMPTY_CONTENT))
+            return LightContent.EMPTY;
         if (Arrays.equals(data, LightCompute.CONTENT_FULLY_LIT)) return LightContent.FULL;
         return LightContent.PRESENT;
     }
@@ -481,10 +536,7 @@ public class PolarLoader implements ChunkLoader {
 
         builder.append('[');
         for (var entry : block.properties().entrySet()) {
-            builder.append(entry.getKey())
-                    .append('=')
-                    .append(entry.getValue())
-                    .append(',');
+            builder.append(entry.getKey()).append('=').append(entry.getValue()).append(',');
         }
         builder.deleteCharAt(builder.length() - 1);
         builder.append(']');

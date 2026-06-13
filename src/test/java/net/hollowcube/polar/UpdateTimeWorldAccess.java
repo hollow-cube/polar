@@ -19,7 +19,12 @@ public class UpdateTimeWorldAccess implements PolarWorldAccess {
         if (userData == null) return; // No saved data, probably first load
 
         long lastSaveTime = userData.read(NetworkBuffer.LONG);
-        logger.info("loading chunk {}, {} which was saved at {}.", chunk.getChunkX(), chunk.getChunkZ(), lastSaveTime);
+        logger.info(
+            "loading chunk {}, {} which was saved at {}.",
+            chunk.getChunkX(),
+            chunk.getChunkZ(),
+            lastSaveTime
+        );
         loadTime = lastSaveTime;
     }
 

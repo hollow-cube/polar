@@ -16,7 +16,11 @@ public class PolarSection {
     public static final int BIOME_PALETTE_SIZE = 64;
 
     public enum LightContent {
-        MISSING, EMPTY, FULL, PRESENT;
+        MISSING,
+        EMPTY,
+        FULL,
+        PRESENT,
+        ;
 
         public static final LightContent[] VALUES = values();
     }
@@ -37,9 +41,9 @@ public class PolarSection {
     public PolarSection() {
         this.empty = true;
 
-        this.blockPalette = new String[]{"minecraft:air"};
+        this.blockPalette = new String[] {"minecraft:air"};
         this.blockData = null;
-        this.biomePalette = new String[]{"minecraft:plains"};
+        this.biomePalette = new String[] {"minecraft:plains"};
         this.biomeData = null;
 
         this.blockLightContent = LightContent.MISSING;
@@ -49,10 +53,14 @@ public class PolarSection {
     }
 
     public PolarSection(
-            String @NotNull [] blockPalette, int @Nullable [] blockData,
-            String @NotNull [] biomePalette, int @Nullable [] biomeData,
-            @NotNull LightContent blockLightContent, byte @Nullable [] blockLight,
-            @NotNull LightContent skyLightContent, byte @Nullable [] skyLight
+        String @NotNull [] blockPalette,
+        int @Nullable [] blockData,
+        String @NotNull [] biomePalette,
+        int @Nullable [] biomeData,
+        @NotNull LightContent blockLightContent,
+        byte @Nullable [] blockLight,
+        @NotNull LightContent skyLightContent,
+        byte @Nullable [] skyLight
     ) {
         this.empty = false;
 

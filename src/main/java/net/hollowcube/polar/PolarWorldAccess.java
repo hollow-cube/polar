@@ -18,8 +18,7 @@ import org.jetbrains.annotations.Nullable;
  * overhead to the format if unused.
  */
 public interface PolarWorldAccess {
-    PolarWorldAccess DEFAULT = new PolarWorldAccess() {
-    };
+    PolarWorldAccess DEFAULT = new PolarWorldAccess() {};
 
     /**
      * Called when an instance is created from this chunk loader.
@@ -29,8 +28,7 @@ public interface PolarWorldAccess {
      * @param instance The Minestom instance being created
      * @param userData The saved user data, or null if none is present.
      */
-    default void loadWorldData(@NotNull Instance instance, @Nullable NetworkBuffer userData) {
-    }
+    default void loadWorldData(@NotNull Instance instance, @Nullable NetworkBuffer userData) {}
 
     /**
      * Called when an instance is being saved.
@@ -40,8 +38,7 @@ public interface PolarWorldAccess {
      * @param instance The Minestom instance being saved
      * @param userData A buffer to write user data to save
      */
-    default void saveWorldData(@NotNull Instance instance, @NotNull NetworkBuffer userData) {
-    }
+    default void saveWorldData(@NotNull Instance instance, @NotNull NetworkBuffer userData) {}
 
     /**
      * Called when a chunk is created, just before it is added to the world.
@@ -51,8 +48,7 @@ public interface PolarWorldAccess {
      * @param chunk    The Minestom chunk being created
      * @param userData The saved user data, or null if none is present
      */
-    default void loadChunkData(@NotNull Chunk chunk, @Nullable NetworkBuffer userData) {
-    }
+    default void loadChunkData(@NotNull Chunk chunk, @Nullable NetworkBuffer userData) {}
 
     /**
      * Called when a chunk is being saved.
@@ -62,16 +58,13 @@ public interface PolarWorldAccess {
      * @param chunk    The Minestom chunk being saved
      * @param userData A buffer to write user data to save
      */
-    default void saveChunkData(@NotNull Chunk chunk, @NotNull NetworkBuffer userData) {
-    }
+    default void saveChunkData(@NotNull Chunk chunk, @NotNull NetworkBuffer userData) {}
 
     @ApiStatus.Experimental
-    default void loadHeightmaps(@NotNull Chunk chunk, int[][] heightmaps) {
-    }
+    default void loadHeightmaps(@NotNull Chunk chunk, int[][] heightmaps) {}
 
     @ApiStatus.Experimental
-    default void saveHeightmaps(@NotNull Chunk chunk, int[][] heightmaps) {
-    }
+    default void saveHeightmaps(@NotNull Chunk chunk, int[][] heightmaps) {}
 
     /**
      * Called when a chunk is being loaded by a {@link PolarLoader} to convert biome namespaces back to id.

@@ -44,8 +44,10 @@ final class StreamingPolarLoader {
     private final int plainsBiomeId;
 
     StreamingPolarLoader(
-            @NotNull InstanceContainer instance, @NotNull PolarDataConverter dataConverter,
-            @Nullable PolarWorldAccess worldAccess, boolean loadLighting
+        @NotNull InstanceContainer instance,
+        @NotNull PolarDataConverter dataConverter,
+        @Nullable PolarWorldAccess worldAccess,
+        boolean loadLighting
     ) {
         this.instance = instance;
         this.dataConverter = dataConverter;
@@ -59,7 +61,10 @@ final class StreamingPolarLoader {
         }
     }
 
-    public void loadAllSequential(@NotNull ReadableByteChannel channel, long fileSize) throws IOException {
+    public void loadAllSequential(
+        @NotNull ReadableByteChannel channel,
+        long fileSize
+    ) throws IOException {
         try (Arena dstArena = Arena.ofConfined()) {
             final MemorySegment dst;
             try (Arena srcArena = Arena.ofConfined()) {
@@ -70,9 +75,13 @@ final class StreamingPolarLoader {
                     final MemorySegment segment = srcArena.allocate(fileSize);
                     long offset = 0L; // readFully, but for large files
                     while (offset < fileSize) {
-                        long n = channel.read(segment.asSlice(offset, fileSize - offset).asByteBuffer());
+                        long n = channel.read(
+                            segment.asSlice(offset, fileSize - offset).asByteBuffer()
+                        );
                         if (n < 0) {
-                            throw new EOFException("Unexpected EOF: expected " + fileSize + " bytes, got " + offset);
+                            throw new EOFException(
+                                "Unexpected EOF: expected " + fileSize + " bytes, got " + offset
+                            );
                         }
                         offset += n;
                     }
@@ -84,8 +93,8 @@ final class StreamingPolarLoader {
                 this.version = buffer.read(SHORT);
                 validateVersion(this.version);
                 this.dataVersion = version >= PolarWorld.VERSION_DATA_CONVERTER
-                        ? buffer.read(VAR_INT)
-                        : dataConverter.defaultDataVersion();
+                    ? buffer.read(VAR_INT)
+                    : dataConverter.defaultDataVersion();
                 var compressionType = PolarWorld.CompressionType.fromId(buffer.read(BYTE));
                 assertThat(compressionType != null, "Invalid compression type");
                 int dataLength = buffer.read(VAR_INT);
@@ -98,17 +107,26 @@ final class StreamingPolarLoader {
                     // src should be unreachable following the dst copy.
                     case ZSTD -> {
                         var decompression = dstArena.allocate(dataLength);
-                        long count = Zstd.decompressUnsafe(decompression.address(), decompression.byteSize(),
-                                                           src.address() + buffer.readIndex(),
-                                                           src.byteSize() - buffer.readIndex());
+                        long count = Zstd.decompressUnsafe(
+                            decompression.address(),
+                            decompression.byteSize(),
+                            src.address() + buffer.readIndex(),
+                            src.byteSize() - buffer.readIndex()
+                        );
                         if (Zstd.isError(count)) {
-                            throw new RuntimeException("decompression failed: " + Zstd.getErrorName(count));
+                            throw new RuntimeException(
+                                "decompression failed: " + Zstd.getErrorName(count)
+                            );
                         }
-                        assertThat(count == dataLength, "Decompressed size does not match expected length");
+                        assertThat(
+                            count == dataLength,
+                            "Decompressed size does not match expected length"
+                        );
                         dst = decompression.asReadOnly();
                     }
-                    default ->
-                            throw new UnsupportedOperationException("Unsupported compression type: " + compressionType);
+                    default -> throw new UnsupportedOperationException(
+                        "Unsupported compression type: " + compressionType
+                    );
                 }
             } // src is deallocated
             // Now we can just read the dst buffer without having to worry about the extra footprint of src
@@ -130,8 +148,12 @@ final class StreamingPolarLoader {
         if (version > PolarWorld.VERSION_WORLD_USERDATA) {
             int userDataLength = buffer.read(VAR_INT);
             if (worldAccess != null) {
-                var worldDataView = NetworkBuffer.wrap(segment.asSlice(buffer.readIndex(), userDataLength), 0L,
-                                                       userDataLength, MinecraftServer.process());
+                var worldDataView = NetworkBuffer.wrap(
+                    segment.asSlice(buffer.readIndex(), userDataLength),
+                    0L,
+                    userDataLength,
+                    MinecraftServer.process()
+                );
                 worldAccess.loadWorldData(instance, worldDataView);
             }
             buffer.advanceRead(userDataLength);
@@ -147,7 +169,11 @@ final class StreamingPolarLoader {
     }
 
     private void readChunk(
-            @NotNull MemorySegment segment, @NotNull NetworkBuffer buffer, int minSection, int maxSection) {
+        @NotNull MemorySegment segment,
+        @NotNull NetworkBuffer buffer,
+        int minSection,
+        int maxSection
+    ) {
         final var chunkX = buffer.read(VAR_INT);
         final var chunkZ = buffer.read(VAR_INT);
         final var chunk = instance.getChunkSupplier().createChunk(instance, chunkX, chunkZ);
@@ -165,11 +191,19 @@ final class StreamingPolarLoader {
             // Load block entities
             final int blockEntityCount = buffer.read(VAR_INT);
             for (int i = 0; i < blockEntityCount; i++) {
-                final var blockEntity = readBlockEntity(dataConverter, version, dataVersion, buffer);
+                final var blockEntity = readBlockEntity(
+                    dataConverter,
+                    version,
+                    dataVersion,
+                    buffer
+                );
                 if (chunkEntries != null && chunkTickables != null) {
                     final var block = createBlockEntity(chunk, blockEntity);
                     final int index = CoordConversion.chunkBlockIndex(
-                            blockEntity.x(), blockEntity.y(), blockEntity.z());
+                        blockEntity.x(),
+                        blockEntity.y(),
+                        blockEntity.z()
+                    );
                     chunkEntries.put(index, block);
                     if (block.handler() != null && block.handler().isTickable())
                         chunkTickables.put(index, block);
@@ -193,8 +227,12 @@ final class StreamingPolarLoader {
         if (version > PolarWorld.VERSION_USERDATA_OPT_BLOCK_ENT_NBT) {
             int userDataLength = buffer.read(VAR_INT);
             if (worldAccess != null) {
-                var chunkDataView = NetworkBuffer.wrap(segment.asSlice(buffer.readIndex(), userDataLength), 0L,
-                                                       userDataLength, MinecraftServer.process());
+                var chunkDataView = NetworkBuffer.wrap(
+                    segment.asSlice(buffer.readIndex(), userDataLength),
+                    0L,
+                    userDataLength,
+                    MinecraftServer.process()
+                );
                 worldAccess.loadChunkData(chunk, chunkDataView);
             }
             buffer.advanceRead(userDataLength);
@@ -202,8 +240,10 @@ final class StreamingPolarLoader {
     }
 
     private void readSection(
-            @NotNull NetworkBuffer buffer, @NotNull Section section, int sectionY,
-            @Nullable Int2ObjectMap<Block> chunkEntires
+        @NotNull NetworkBuffer buffer,
+        @NotNull Section section,
+        int sectionY,
+        @Nullable Int2ObjectMap<Block> chunkEntires
     ) {
         if (buffer.read(BOOLEAN)) return; // Empty section
 
@@ -223,7 +263,9 @@ final class StreamingPolarLoader {
             for (int y = 0; y < CHUNK_SECTION_SIZE; y++) {
                 for (int z = 0; z < CHUNK_SECTION_SIZE; z++) {
                     for (int x = 0; x < CHUNK_SECTION_SIZE; x++) {
-                        int index = y * CHUNK_SECTION_SIZE * CHUNK_SECTION_SIZE + z * CHUNK_SECTION_SIZE + x;
+                        int index = y * CHUNK_SECTION_SIZE * CHUNK_SECTION_SIZE
+                            + z * CHUNK_SECTION_SIZE
+                            + x;
                         int blockStateId = blockPalette[blockData[index]];
                         section.blockPalette().set(x, y, z, blockStateId);
 
@@ -231,7 +273,10 @@ final class StreamingPolarLoader {
                         var block = Block.fromStateId(blockStateId);
                         if (chunkEntires != null && block.registry().isBlockEntity()) {
                             int chunkY = sectionY * CHUNK_SECTION_SIZE + y;
-                            chunkEntires.putIfAbsent(CoordConversion.chunkBlockIndex(x, chunkY, z), block);
+                            chunkEntires.putIfAbsent(
+                                CoordConversion.chunkBlockIndex(x, chunkY, z),
+                                block
+                            );
                         }
                     }
                 }
@@ -285,18 +330,32 @@ final class StreamingPolarLoader {
 
         if (version > PolarWorld.VERSION_UNIFIED_LIGHT) {
             var blockLightContent = version >= PolarWorld.VERSION_IMPROVED_LIGHT
-                    ? PolarSection.LightContent.VALUES[buffer.read(BYTE)]
-                    : (buffer.read(BOOLEAN) ? PolarSection.LightContent.PRESENT : PolarSection.LightContent.MISSING);
-            byte[] blockLight = blockLightContent == PolarSection.LightContent.PRESENT ? buffer.read(LIGHT_DATA) : null;
+                ? PolarSection.LightContent.VALUES[buffer.read(BYTE)]
+                : (buffer.read(BOOLEAN)
+                    ? PolarSection.LightContent.PRESENT
+                    : PolarSection.LightContent.MISSING);
+            byte[] blockLight = blockLightContent == PolarSection.LightContent.PRESENT
+                ? buffer.read(LIGHT_DATA)
+                : null;
             if (loadLighting && blockLightContent != PolarSection.LightContent.MISSING)
-                unsafeUpdateBlockLightArray(section.blockLight(), getLightArray(blockLightContent, blockLight));
+                unsafeUpdateBlockLightArray(
+                    section.blockLight(),
+                    getLightArray(blockLightContent, blockLight)
+                );
 
             var skyLightContent = version >= PolarWorld.VERSION_IMPROVED_LIGHT
-                    ? PolarSection.LightContent.VALUES[buffer.read(BYTE)]
-                    : (buffer.read(BOOLEAN) ? PolarSection.LightContent.PRESENT : PolarSection.LightContent.MISSING);
-            byte[] skyLight = skyLightContent == PolarSection.LightContent.PRESENT ? buffer.read(LIGHT_DATA) : null;
+                ? PolarSection.LightContent.VALUES[buffer.read(BYTE)]
+                : (buffer.read(BOOLEAN)
+                    ? PolarSection.LightContent.PRESENT
+                    : PolarSection.LightContent.MISSING);
+            byte[] skyLight = skyLightContent == PolarSection.LightContent.PRESENT
+                ? buffer.read(LIGHT_DATA)
+                : null;
             if (loadLighting && skyLightContent != PolarSection.LightContent.MISSING)
-                unsafeUpdateSkyLightArray(section.skyLight(), getLightArray(skyLightContent, skyLight));
+                unsafeUpdateSkyLightArray(
+                    section.skyLight(),
+                    getLightArray(skyLightContent, skyLight)
+                );
         } else if (buffer.read(BOOLEAN)) {
             if (loadLighting) {
                 unsafeUpdateBlockLightArray(section.blockLight(), buffer.read(LIGHT_DATA));
@@ -310,19 +369,26 @@ final class StreamingPolarLoader {
     private int[] readBlockPalette(@NotNull NetworkBuffer buffer) {
         var rawBlockPalette = buffer.read(STRING_ARRAY);
         if (dataVersion < dataConverter.dataVersion()) {
-            dataConverter.convertBlockPalette(rawBlockPalette, dataVersion, dataConverter.dataVersion());
+            dataConverter.convertBlockPalette(
+                rawBlockPalette,
+                dataVersion,
+                dataConverter.dataVersion()
+            );
         }
         upgradeGrassInPalette(rawBlockPalette, version);
         int[] blockPalette = new int[rawBlockPalette.length];
         for (int i = 0; i < rawBlockPalette.length; i++) {
-            blockPalette[i] = blockToStateIdCache.computeIfAbsent(rawBlockPalette[i], (String key) -> {
-                try {
-                    //noinspection deprecation
-                    return ArgumentBlockState.staticParse(key).stateId();
-                } catch (ArgumentSyntaxException e) {
-                    throw new RuntimeException("Failed to parse block state: " + key, e);
+            blockPalette[i] = blockToStateIdCache.computeIfAbsent(
+                rawBlockPalette[i],
+                (String key) -> {
+                    try {
+                        //noinspection deprecation
+                        return ArgumentBlockState.staticParse(key).stateId();
+                    } catch (ArgumentSyntaxException e) {
+                        throw new RuntimeException("Failed to parse block state: " + key, e);
+                    }
                 }
-            });
+            );
         }
         return blockPalette;
     }
@@ -332,8 +398,10 @@ final class StreamingPolarLoader {
         int[] biomePalette = new int[rawBiomePalette.length];
         for (int i = 0; i < rawBiomePalette.length; i++) {
             biomePalette[i] = biomeToIdCache.computeIfAbsent(rawBiomePalette[i], (String name) -> {
-                PolarWorldAccess searchWorldAccess = Objects.requireNonNullElse(this.worldAccess,
-                                                                                PolarWorldAccess.DEFAULT);
+                PolarWorldAccess searchWorldAccess = Objects.requireNonNullElse(
+                    this.worldAccess,
+                    PolarWorldAccess.DEFAULT
+                );
                 var biomeId = searchWorldAccess.getBiomeId(name);
                 if (biomeId == -1) {
                     logger.error("Failed to find biome: {}", name);

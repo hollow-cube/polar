@@ -17,8 +17,9 @@ class TestAnvilPolar {
     @Test
     void testConvertAnvilWorld() throws Exception {
         var world = AnvilPolar.anvilToPolar(
-                Path.of("./src/test/resources/bench").toRealPath(),
-                -4, 19
+            Path.of("./src/test/resources/bench").toRealPath(),
+            -4,
+            19
         );
         assertEquals(-4, world.minSection());
 

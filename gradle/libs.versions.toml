@@ -6,6 +6,7 @@ zstd = "1.5.7-7"
 fastutil = "8.5.12"
 
 nmcp = "1.0.0-rc.1"
+javafmt = "0.3.0"
 
 [libraries]
 minestom = { group = "net.minestom", name = "minestom", version.ref = "minestom" }
@@ -14,3 +15,4 @@ fastutil = { group = "it.unimi.dsi", name = "fastutil", version.ref = "fastutil"
 
 [plugins]
 nmcp = { id = "com.gradleup.nmcp.aggregation", version.ref = "nmcp" }
+javafmt = { id = "dev.javafmt.gradle", version.ref = "javafmt" }

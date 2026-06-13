@@ -12,14 +12,16 @@ import static net.minestom.server.network.NetworkBuffer.*;
 
 @SuppressWarnings("UnstableApiUsage")
 public class PolarWriter {
-    private PolarWriter() {
-    }
+    private PolarWriter() {}
 
     public static byte[] write(@NotNull PolarWorld world) {
         return write(world, PolarDataConverter.NOOP);
     }
 
-    public static byte[] write(@NotNull PolarWorld world, @NotNull PolarDataConverter dataConverter) {
+    public static byte[] write(
+        @NotNull PolarWorld world,
+        @NotNull PolarDataConverter dataConverter
+    ) {
         // Write the compressed content first
         var contentBytes = NetworkBuffer.makeArray(content -> {
             content.write(BYTE, world.minSection());
@@ -51,11 +53,16 @@ public class PolarWriter {
         });
     }
 
-    private static void writeChunk(@NotNull NetworkBuffer buffer, @NotNull PolarChunk chunk, int sectionCount) {
+    private static void writeChunk(
+        @NotNull NetworkBuffer buffer,
+        @NotNull PolarChunk chunk,
+        int sectionCount
+    ) {
         buffer.write(VAR_INT, chunk.x());
         buffer.write(VAR_INT, chunk.z());
 
-        assert sectionCount == chunk.sections().length : "section count and chunk section length mismatch";
+        assert sectionCount == chunk.sections().length
+            : "section count and chunk section length mismatch";
 
         for (var section : chunk.sections()) {
             writeSection(buffer, section);
@@ -69,8 +76,7 @@ public class PolarWriter {
         {
             int heightmapBits = 0;
             for (int i = 0; i < PolarChunk.MAX_HEIGHTMAPS; i++) {
-                if (chunk.heightmap(i) != null)
-                    heightmapBits |= 1 << i;
+                if (chunk.heightmap(i) != null) heightmapBits |= 1 << i;
             }
             buffer.write(INT, heightmapBits);
 
@@ -119,8 +125,15 @@ public class PolarWriter {
             buffer.write(RAW_BYTES, section.skyLight());
     }
 
-    private static void writeBlockEntity(@NotNull NetworkBuffer buffer, @NotNull PolarChunk.BlockEntity blockEntity) {
-        var index = CoordConversion.chunkBlockIndex(blockEntity.x(), blockEntity.y(), blockEntity.z());
+    private static void writeBlockEntity(
+        @NotNull NetworkBuffer buffer,
+        @NotNull PolarChunk.BlockEntity blockEntity
+    ) {
+        var index = CoordConversion.chunkBlockIndex(
+            blockEntity.x(),
+            blockEntity.y(),
+            blockEntity.z()
+        );
         buffer.write(INT, index);
         buffer.write(STRING.optional(), blockEntity.id());
         buffer.write(NBT.optional(), blockEntity.data());

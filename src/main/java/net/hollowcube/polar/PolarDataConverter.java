@@ -11,8 +11,7 @@ import java.util.Map;
  */
 public interface PolarDataConverter {
     @NotNull
-    PolarDataConverter NOOP = new PolarDataConverter() {
-    };
+    PolarDataConverter NOOP = new PolarDataConverter() {};
 
     /**
      * Returns the data version to use on worlds lower than {@link PolarWorld#VERSION_DATA_CONVERTER} which
@@ -37,13 +36,13 @@ public interface PolarDataConverter {
      * @param fromVersion The data version of the palette
      * @param toVersion   The data version to convert the palette to
      */
-    default void convertBlockPalette(@NotNull String[] palette, int fromVersion, int toVersion) {
-
-    }
+    default void convertBlockPalette(@NotNull String[] palette, int fromVersion, int toVersion) {}
 
     default @NotNull Map.Entry<String, CompoundBinaryTag> convertBlockEntityData(
-            @NotNull String id, @NotNull CompoundBinaryTag data,
-            int fromVersion, int toVersion
+        @NotNull String id,
+        @NotNull CompoundBinaryTag data,
+        int fromVersion,
+        int toVersion
     ) {
         return Map.entry(id, data);
     }

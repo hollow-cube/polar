@@ -13,18 +13,19 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class TestNonStandardHeight {
     static final DimensionType dimensionType = DimensionType.builder()
-            .minY(-2032)
-            .height(4064)
-            .build();
+        .minY(-2032)
+        .height(4064)
+        .build();
 
     static final RegistryKey<DimensionType> dimensionTypeKey;
 
     static {
         MinecraftServer.init();
 
-        dimensionTypeKey = MinecraftServer
-                .getDimensionTypeRegistry()
-                .register("test:height", dimensionType);
+        dimensionTypeKey = MinecraftServer.getDimensionTypeRegistry().register(
+            "test:height",
+            dimensionType
+        );
     }
 
     @Test

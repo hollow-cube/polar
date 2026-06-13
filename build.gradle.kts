@@ -1,5 +1,6 @@
 plugins {
     `java-library`
+    alias(libs.plugins.javafmt)
 
     `maven-publish`
     signing

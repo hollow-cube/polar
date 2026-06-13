@@ -45,28 +45,37 @@ public class PolarWorld {
     private final Long2ObjectMap<PolarChunk> chunks = new Long2ObjectOpenHashMap<>();
 
     public PolarWorld() {
-        this(LATEST_VERSION, MinecraftServer.DATA_VERSION, DEFAULT_COMPRESSION, (byte) -4, (byte) 19, new byte[0], List.of());
+        this(
+            LATEST_VERSION,
+            MinecraftServer.DATA_VERSION,
+            DEFAULT_COMPRESSION,
+            (byte) -4,
+            (byte) 19,
+            new byte[0],
+            List.of()
+        );
     }
 
     public PolarWorld(@NotNull DimensionType dimensionType) {
         this(
-                LATEST_VERSION,
-                MinecraftServer.DATA_VERSION,
-                DEFAULT_COMPRESSION,
-                (byte) (dimensionType.minY() / CHUNK_SECTION_SIZE),
-                (byte) (dimensionType.maxY() / CHUNK_SECTION_SIZE - 1),
-                new byte[0],
-                List.of()
+            LATEST_VERSION,
+            MinecraftServer.DATA_VERSION,
+            DEFAULT_COMPRESSION,
+            (byte) (dimensionType.minY() / CHUNK_SECTION_SIZE),
+            (byte) (dimensionType.maxY() / CHUNK_SECTION_SIZE - 1),
+            new byte[0],
+            List.of()
         );
     }
 
     public PolarWorld(
-            short version,
-            int dataVersion,
-            @NotNull CompressionType compression,
-            byte minSection, byte maxSection,
-            byte @NotNull [] userData,
-            @NotNull List<PolarChunk> chunks
+        short version,
+        int dataVersion,
+        @NotNull CompressionType compression,
+        byte minSection,
+        byte maxSection,
+        byte @NotNull [] userData,
+        @NotNull List<PolarChunk> chunks
     ) {
         this.version = version;
         this.dataVersion = dataVersion;
@@ -137,7 +146,8 @@ public class PolarWorld {
 
     public enum CompressionType {
         NONE,
-        ZSTD;
+        ZSTD,
+        ;
 
         private static final CompressionType[] VALUES = values();
 

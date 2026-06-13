@@ -33,28 +33,26 @@ public class DemoServer {
         // Unlit
         instance.setChunkLoader(new PolarLoader(Path.of("./src/test/resources/bench_1205.polar")));
         // Lit
-//        instance.setChunkSupplier(LightingChunk::new);
-//        instance.setChunkLoader(new PolarLoader(Path.of("./hcspawn.polar")));
-
+        //        instance.setChunkSupplier(LightingChunk::new);
+        //        instance.setChunkLoader(new PolarLoader(Path.of("./hcspawn.polar")));
 
         MinecraftServer.getGlobalEventHandler()
-                .addListener(AsyncPlayerConfigurationEvent.class, event -> {
-                    event.setSpawningInstance(instance);
-                    event.getPlayer().setRespawnPoint(new Pos(0, 40, 0, 90, 0));
-                })
-                .addListener(PlayerSpawnEvent.class, event -> {
-                    event.getPlayer().setGameMode(GameMode.CREATIVE);
-                })
-                .addListener(PlayerChatEvent.class, event -> {
-                    if (!event.getRawMessage().equals("save")) return;
+            .addListener(AsyncPlayerConfigurationEvent.class, event -> {
+                event.setSpawningInstance(instance);
+                event.getPlayer().setRespawnPoint(new Pos(0, 40, 0, 90, 0));
+            })
+            .addListener(PlayerSpawnEvent.class, event -> {
+                event.getPlayer().setGameMode(GameMode.CREATIVE);
+            })
+            .addListener(PlayerChatEvent.class, event -> {
+                if (!event.getRawMessage().equals("save")) return;
 
-                    var start = System.currentTimeMillis();
-                    instance.saveChunksToStorage().join();
+                var start = System.currentTimeMillis();
+                instance.saveChunksToStorage().join();
 
-                    var time = System.currentTimeMillis() - start;
-                    event.getPlayer().sendMessage("Done in " + (time) + "ms!");
-                });
-
+                var time = System.currentTimeMillis() - start;
+                event.getPlayer().sendMessage("Done in " + (time) + "ms!");
+            });
 
         var saveCommand = new Command("save");
         saveCommand.addSyntax((sender, context) -> {
@@ -64,7 +62,11 @@ public class DemoServer {
             ((InstanceContainer) player.getInstance()).setChunkLoader(polarLoader);
             player.getInstance().saveInstance().join();
             try {
-                Files.write(Path.of("./hcspawn.polar"), PolarWriter.write(polarLoader.world()), StandardOpenOption.CREATE);
+                Files.write(
+                    Path.of("./hcspawn.polar"),
+                    PolarWriter.write(polarLoader.world()),
+                    StandardOpenOption.CREATE
+                );
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -72,13 +74,14 @@ public class DemoServer {
         });
         MinecraftServer.getCommandManager().register(saveCommand);
 
-
         var lightCommand = new Command("light");
         lightCommand.addSyntax((sender, context) -> {
             if (!(sender instanceof Player player)) return;
             player.sendMessage("Light!");
 
-            var section = player.getInstance().getChunkAt(player.getPosition()).getSectionAt(player.getPosition().blockY());
+            var section = player.getInstance()
+                .getChunkAt(player.getPosition())
+                .getSectionAt(player.getPosition().blockY());
             player.sendMessage(section.toString());
 
             player.sendMessage(Arrays.toString(section.skyLight().array()));

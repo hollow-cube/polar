@@ -33,7 +33,9 @@ class TestReaderBackwardsCompatibility {
     }
 
     private static void runTest(int version) {
-        var is = TestReaderBackwardsCompatibility.class.getResourceAsStream("/backward/" + version + ".polar");
+        var is = TestReaderBackwardsCompatibility.class.getResourceAsStream(
+            "/backward/" + version + ".polar"
+        );
         assertNotNull(is);
 
         var worldData = assertDoesNotThrow(is::readAllBytes);
@@ -47,7 +49,16 @@ class TestReaderBackwardsCompatibility {
         assertEquals(0, chunk.blockEntities().size());
 
         var section = chunk.sections()[7];
-        var expectedPalette = new String[]{"granite", "stone", "diorite", "gravel", "coal_ore", "copper_ore", "iron_ore", "dirt"};
+        var expectedPalette = new String[] {
+            "granite",
+            "stone",
+            "diorite",
+            "gravel",
+            "coal_ore",
+            "copper_ore",
+            "iron_ore",
+            "dirt",
+        };
         assertArrayEquals(expectedPalette, section.blockPalette());
     }
 

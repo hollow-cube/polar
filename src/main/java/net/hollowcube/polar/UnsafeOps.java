@@ -58,7 +58,9 @@ final class UnsafeOps {
     static @Nullable Int2ObjectOpenHashMap<Block> unsafeGetEntries(@NotNull Chunk chunk) {
         if (chunk instanceof DynamicChunk dynamicChunk) {
             try {
-                return (Int2ObjectOpenHashMap<Block>) DYNAMIC_CHUNK_ENTRIES_GETTER.invokeExact(dynamicChunk);
+                return (Int2ObjectOpenHashMap<Block>) DYNAMIC_CHUNK_ENTRIES_GETTER.invokeExact(
+                    dynamicChunk
+                );
             } catch (Throwable t) {
                 throw new RuntimeException(t);
             }
@@ -68,7 +70,9 @@ final class UnsafeOps {
     static @Nullable Int2ObjectOpenHashMap<Block> unsafeGetTickableMap(@NotNull Chunk chunk) {
         if (chunk instanceof DynamicChunk dynamicChunk) {
             try {
-                return (Int2ObjectOpenHashMap<Block>) DYNAMIC_CHUNK_TICKABLE_MAP_GETTER.invokeExact(dynamicChunk);
+                return (Int2ObjectOpenHashMap<Block>) DYNAMIC_CHUNK_TICKABLE_MAP_GETTER.invokeExact(
+                    dynamicChunk
+                );
             } catch (Throwable t) {
                 throw new RuntimeException(t);
             }
@@ -101,7 +105,10 @@ final class UnsafeOps {
 
     static {
         try {
-            var lookup = MethodHandles.privateLookupIn(InstanceContainer.class, MethodHandles.lookup());
+            var lookup = MethodHandles.privateLookupIn(
+                InstanceContainer.class,
+                MethodHandles.lookup()
+            );
             var method = InstanceContainer.class.getDeclaredMethod("cacheChunk", Chunk.class);
             CACHE_CHUNK_HANDLE = lookup.unreflect(method);
         } catch (IllegalAccessException | NoSuchMethodException e) {
@@ -110,13 +117,15 @@ final class UnsafeOps {
 
         try {
             var lookup = MethodHandles.privateLookupIn(DynamicChunk.class, MethodHandles.lookup());
-            NEEDS_HEIGHTMAP_REFRESH_SETTER = lookup.unreflectSetter(DynamicChunk.class
-                                                                            .getDeclaredField(
-                                                                                    "needsCompleteHeightmapRefresh"));
-            DYNAMIC_CHUNK_ENTRIES_GETTER = lookup.unreflectGetter(DynamicChunk.class
-                                                                          .getDeclaredField("entries"));
-            DYNAMIC_CHUNK_TICKABLE_MAP_GETTER = lookup.unreflectGetter(DynamicChunk.class
-                                                                               .getDeclaredField("tickableMap"));
+            NEEDS_HEIGHTMAP_REFRESH_SETTER = lookup.unreflectSetter(
+                DynamicChunk.class.getDeclaredField("needsCompleteHeightmapRefresh")
+            );
+            DYNAMIC_CHUNK_ENTRIES_GETTER = lookup.unreflectGetter(
+                DynamicChunk.class.getDeclaredField("entries")
+            );
+            DYNAMIC_CHUNK_TICKABLE_MAP_GETTER = lookup.unreflectGetter(
+                DynamicChunk.class.getDeclaredField("tickableMap")
+            );
             CHUNK_ON_LOAD_HANDLE = lookup.unreflect(Chunk.class.getDeclaredMethod("onLoad"));
         } catch (IllegalAccessException | NoSuchFieldException | NoSuchMethodException e) {
             throw new RuntimeException(e);
@@ -125,11 +134,18 @@ final class UnsafeOps {
         try {
             var blockLight = Class.forName("net.minestom.server.instance.light.BlockLight");
             var lookup = MethodHandles.privateLookupIn(blockLight, MethodHandles.lookup());
-            BLOCK_LIGHT_CONTENT_SETTER = lookup.unreflectSetter(blockLight.getDeclaredField("content"));
+            BLOCK_LIGHT_CONTENT_SETTER = lookup.unreflectSetter(
+                blockLight.getDeclaredField("content")
+            );
             BLOCK_LIGHT_CONTENT_PROPAGATION_SETTER = lookup.unreflectSetter(
-                    blockLight.getDeclaredField("contentPropagation"));
-            BLOCK_LIGHT_IS_VALID_BORDERS_SETTER = lookup.unreflectSetter(blockLight.getDeclaredField("isValidBorders"));
-            BLOCK_LIGHT_NEEDS_SEND_GETTER = lookup.unreflectGetter(blockLight.getDeclaredField("needsSend"));
+                blockLight.getDeclaredField("contentPropagation")
+            );
+            BLOCK_LIGHT_IS_VALID_BORDERS_SETTER = lookup.unreflectSetter(
+                blockLight.getDeclaredField("isValidBorders")
+            );
+            BLOCK_LIGHT_NEEDS_SEND_GETTER = lookup.unreflectGetter(
+                blockLight.getDeclaredField("needsSend")
+            );
         } catch (NoSuchFieldException | ClassNotFoundException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
@@ -138,9 +154,14 @@ final class UnsafeOps {
             var lookup = MethodHandles.privateLookupIn(skyLight, MethodHandles.lookup());
             SKY_LIGHT_CONTENT_SETTER = lookup.unreflectSetter(skyLight.getDeclaredField("content"));
             SKY_LIGHT_CONTENT_PROPAGATION_SETTER = lookup.unreflectSetter(
-                    skyLight.getDeclaredField("contentPropagation"));
-            SKY_LIGHT_IS_VALID_BORDERS_SETTER = lookup.unreflectSetter(skyLight.getDeclaredField("isValidBorders"));
-            SKY_LIGHT_NEEDS_SEND_GETTER = lookup.unreflectGetter(skyLight.getDeclaredField("needsSend"));
+                skyLight.getDeclaredField("contentPropagation")
+            );
+            SKY_LIGHT_IS_VALID_BORDERS_SETTER = lookup.unreflectSetter(
+                skyLight.getDeclaredField("isValidBorders")
+            );
+            SKY_LIGHT_NEEDS_SEND_GETTER = lookup.unreflectGetter(
+                skyLight.getDeclaredField("needsSend")
+            );
         } catch (NoSuchFieldException | ClassNotFoundException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
