@@ -1,12 +1,10 @@
 package net.hollowcube.polar;
 
-import net.minestom.server.utils.validate.Check;
-
 final class PaletteUtil {
     private PaletteUtil() {}
 
     public static int bitsToRepresent(int n) {
-        Check.argCondition(n < 1, "n must be greater than 0");
+        if (n < 1) throw new IllegalArgumentException("n must be greater than 0");
         return Integer.SIZE - Integer.numberOfLeadingZeros(n);
     }
 

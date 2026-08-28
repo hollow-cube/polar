@@ -1,13 +1,11 @@
 package net.hollowcube.polar;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 
 public class WorldHeightUtil {
-    public static @NotNull PolarWorld updateWorldHeight(
-        @NotNull PolarWorld world,
+    public static PolarWorld updateWorldHeight(
+        PolarWorld world,
         byte minSection,
         byte maxSection
     ) {
@@ -30,8 +28,8 @@ public class WorldHeightUtil {
         );
     }
 
-    public static @NotNull PolarChunk updateChunkHeight(
-        @NotNull PolarChunk chunk,
+    public static PolarChunk updateChunkHeight(
+        PolarChunk chunk,
         byte minSection,
         byte maxSection
     ) {
