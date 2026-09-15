@@ -8,6 +8,7 @@ import net.minestom.server.instance.anvil.AnvilLoader;
 import net.minestom.server.world.DimensionType;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -43,8 +44,8 @@ public class AnvilPolar {
      * @throws IOException If there was an error reading the anvil world
      */
     public static @NotNull PolarWorld anvilToPolar(
-        @NotNull Path path,
-        @NotNull ChunkSelector selector
+            @NotNull Path path,
+            @NotNull ChunkSelector selector
     ) throws IOException {
         return anvilToPolar(path, -4, 19, selector);
     }
@@ -63,9 +64,9 @@ public class AnvilPolar {
      * @throws IOException If there was an error reading the anvil world
      */
     public static @NotNull PolarWorld anvilToPolar(
-        @NotNull Path path,
-        int minSection,
-        int maxSection
+            @NotNull Path path,
+            int minSection,
+            int maxSection
     ) throws IOException {
         return anvilToPolar(path, minSection, maxSection, ChunkSelector.all());
     }
@@ -85,16 +86,21 @@ public class AnvilPolar {
      * @throws IOException If there was an error reading the anvil world
      */
     public static @NotNull PolarWorld anvilToPolar(
-        @NotNull Path path,
-        int minSection,
-        int maxSection,
-        @NotNull ChunkSelector selector
+            @NotNull Path path,
+            int minSection,
+            int maxSection,
+            @NotNull ChunkSelector selector
     ) throws IOException {
+        // New directory structure (JE 26.1+)
+        if (Files.exists(path.resolve("dimensions"))) {
+            path = path.resolve("dimensions", "minecraft", "overworld");
+        }
+
         final Instance instance = new InstanceContainer(
-            UUID.randomUUID(),
-            DimensionType.OVERWORLD
+                UUID.randomUUID(),
+                DimensionType.OVERWORLD
         ); // Empty instance, never registered
-        final AnvilLoader anvilLoader = new AnvilLoader(path);
+        final AnvilLoader anvilLoader = new AnvilLoader(path, DimensionType.OVERWORLD.key());
 
         var anvilChunks = new ArrayList<Chunk>();
         try (var files = Files.walk(path.resolve("region"), 1)) {
@@ -106,27 +112,27 @@ public class AnvilPolar {
                 var regionZ = Integer.parseInt(nameParts[2]);
 
                 anvilChunks.addAll(
-                    readAnvilChunks(
-                        instance,
-                        anvilLoader,
-                        regionX,
-                        regionZ,
-                        minSection,
-                        maxSection,
-                        selector
-                    )
+                        readAnvilChunks(
+                                instance,
+                                anvilLoader,
+                                regionX,
+                                regionZ,
+                                minSection,
+                                maxSection,
+                                selector
+                        )
                 );
             }
         }
 
         var world = new PolarWorld(
-            PolarWorld.LATEST_VERSION,
-            MinecraftServer.DATA_VERSION,
-            PolarWorld.DEFAULT_COMPRESSION,
-            (byte) minSection,
-            (byte) maxSection,
-            new byte[0],
-            List.of()
+                PolarWorld.LATEST_VERSION,
+                MinecraftServer.DATA_VERSION,
+                PolarWorld.DEFAULT_COMPRESSION,
+                (byte) minSection,
+                (byte) maxSection,
+                new byte[0],
+                List.of()
         );
         var polarLoader = new PolarLoader(world);
         polarLoader.saveChunks(anvilChunks);
@@ -135,13 +141,13 @@ public class AnvilPolar {
     }
 
     private static @NotNull List<Chunk> readAnvilChunks(
-        @NotNull Instance instance,
-        @NotNull AnvilLoader anvilLoader,
-        int regionX,
-        int regionZ,
-        int minSection,
-        int maxSection,
-        @NotNull ChunkSelector selector
+            @NotNull Instance instance,
+            @NotNull AnvilLoader anvilLoader,
+            int regionX,
+            int regionZ,
+            int minSection,
+            int maxSection,
+            @NotNull ChunkSelector selector
     ) throws IOException {
         var chunks = new ArrayList<Chunk>();
         for (int x = 0; x < 32; x++) {
