@@ -8,6 +8,7 @@ import net.minestom.server.instance.anvil.AnvilLoader;
 import net.minestom.server.world.DimensionType;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -90,11 +91,16 @@ public class AnvilPolar {
         int maxSection,
         @NotNull ChunkSelector selector
     ) throws IOException {
+        // New directory structure (JE 26.1+)
+        if (Files.exists(path.resolve("dimensions"))) {
+            path = path.resolve("dimensions", "minecraft", "overworld");
+        }
+
         final Instance instance = new InstanceContainer(
             UUID.randomUUID(),
             DimensionType.OVERWORLD
         ); // Empty instance, never registered
-        final AnvilLoader anvilLoader = new AnvilLoader(path);
+        final AnvilLoader anvilLoader = new AnvilLoader(path, DimensionType.OVERWORLD.key());
 
         var anvilChunks = new ArrayList<Chunk>();
         try (var files = Files.walk(path.resolve("region"), 1)) {

@@ -25,7 +25,20 @@ class TestAnvilPolar {
 
         var result = PolarWriter.write(world);
         System.out.println(result.length);
-        Files.write(Path.of("./src/test/resources/test123"), result);
+        Files.write(Path.of("./src/test/resources/test123_old"), result);
     }
 
+    @Test
+    void testConvertAnvilWorldNew() throws Exception {
+        var world = AnvilPolar.anvilToPolar(
+            Path.of("./src/test/resources/bench_new").toRealPath(),
+            -4,
+            19
+        );
+        assertEquals(-4, world.minSection());
+
+        var result = PolarWriter.write(world);
+        System.out.println(result.length);
+        Files.write(Path.of("./src/test/resources/test123_new"), result);
+    }
 }
