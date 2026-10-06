@@ -78,7 +78,7 @@ public interface PolarWorldAccess {
      */
     default int getBiomeId(@NotNull String name) {
         var biomeRegistry = MinecraftServer.getBiomeRegistry();
-        return biomeRegistry.getId(RegistryKey.unsafeOf(name));
+        return biomeRegistry.getId(RegistryKey.of(name));
     }
 
     default @NotNull String getBiomeName(int id) {

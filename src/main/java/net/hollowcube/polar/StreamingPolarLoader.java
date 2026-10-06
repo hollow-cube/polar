@@ -271,7 +271,9 @@ final class StreamingPolarLoader {
 
                         // Vanilla block entities must be tracked in the chunk entries so they are sent to the client.
                         var block = Block.fromStateId(blockStateId);
-                        if (chunkEntires != null && block.registry().isBlockEntity()) {
+
+                        assert block != null;
+                        if (chunkEntires != null && block.blockEntityType() != null) {
                             int chunkY = sectionY * CHUNK_SECTION_SIZE + y;
                             chunkEntires.putIfAbsent(
                                 CoordConversion.chunkBlockIndex(x, chunkY, z),
