@@ -291,6 +291,12 @@ public class PolarReader {
      */
     private static BinaryTag legacyReadNBT(@NotNull NetworkBuffer buffer) {
         try {
+            /*
+             *   TODO: Replace deprecated BinaryTagReader
+             *   @Turboman3000: idk what to use for the replacement,
+             *                  but still wanted to point it out and mark it :D
+             */
+
             var nbtReader = new BinaryTagReader(
                 new DataInputStream(
                     new InputStream() {
