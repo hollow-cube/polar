@@ -78,6 +78,7 @@ public class PolarLoader implements ChunkLoader {
         return future;
     }
 
+    private final Map<String, Block> blockReadCache = new ConcurrentHashMap<>();
     private final Map<String, Integer> biomeReadCache = new ConcurrentHashMap<>();
     private final Map<Integer, String> biomeWriteCache = new ConcurrentHashMap<>();
 
@@ -221,17 +222,10 @@ public class PolarLoader implements ChunkLoader {
         var rawBlockPalette = sectionData.blockPalette();
         var blockPalette = new Block[rawBlockPalette.length];
         for (int i = 0; i < rawBlockPalette.length; i++) {
-            try {
-                //noinspection deprecation
-                blockPalette[i] = ArgumentBlockState.staticParse(rawBlockPalette[i]);
-            } catch (ArgumentSyntaxException e) {
-                logger.error(
-                    "Failed to parse block state: {} ({})",
-                    rawBlockPalette[i],
-                    e.getMessage()
-                );
-                blockPalette[i] = Block.AIR;
-            }
+            blockPalette[i] = blockReadCache.computeIfAbsent(
+                rawBlockPalette[i],
+                PolarLoader::parseBlockState
+            );
         }
         if (blockPalette.length == 1) {
             section.blockPalette().fill(blockPalette[0].stateId());
@@ -302,6 +296,15 @@ public class PolarLoader implements ChunkLoader {
                 section.skyLight(),
                 getLightArray(sectionData.skyLightContent(), sectionData.skyLight())
             );
+    }
+
+    private static @NotNull Block parseBlockState(@NotNull String state) {
+        try {
+            return ArgumentBlockState.staticParse(state);
+        } catch (ArgumentSyntaxException e) {
+            logger.error("Failed to parse block state: {} ({})", state, e.getMessage());
+            return Block.AIR;
+        }
     }
 
     static byte[] getLightArray(@NotNull LightContent content, byte @Nullable [] data) {
