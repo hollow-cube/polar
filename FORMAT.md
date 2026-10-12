@@ -28,8 +28,8 @@ Entities or some other extra data field needs to be added to chunks in the futur
 
 | Name                     | Type                | Notes                                                                                |
 |--------------------------|---------------------|--------------------------------------------------------------------------------------|
-| Chunk X                  | varint              |                                                                                      |
-| Chunk Z                  | varint              |                                                                                      |
+| Chunk X                  | varint              | zigzag-encoded since version 8                                                       |
+| Chunk Z                  | varint              | zigzag-encoded since version 8                                                       |
 | Sections                 | array[section]      | `maxSection-minSection+1` entries                                                    |
 | Number of Block Entities | varint              | Number of entries in the following array                                             |
 | Block Entities           | array[block entity] |                                                                                      |

@@ -93,6 +93,10 @@ public class PolarReader {
     ) {
         var chunkX = buffer.read(VAR_INT);
         var chunkZ = buffer.read(VAR_INT);
+        if (version >= PolarWorld.VERSION_ZIGZAG_CHUNK_POS) {
+            chunkX = PolarWorld.zigZagDecode(chunkX);
+            chunkZ = PolarWorld.zigZagDecode(chunkZ);
+        }
 
         var sections = new PolarSection[sectionCount];
         for (int i = 0; i < sectionCount; i++) {
