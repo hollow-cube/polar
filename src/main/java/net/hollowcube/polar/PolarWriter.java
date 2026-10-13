@@ -37,7 +37,7 @@ public class PolarWriter {
         // Create final buffer
         return NetworkBuffer.makeArray(buffer -> {
             buffer.write(INT, PolarWorld.MAGIC_NUMBER);
-            buffer.write(SHORT, PolarWorld.VERSION_ZIGZAG_CHUNK_POS);
+            buffer.write(SHORT, PolarWorld.VERSION_IMPROVED_LIGHT);
             buffer.write(VAR_INT, dataConverter.dataVersion());
             buffer.write(BYTE, (byte) world.compression().ordinal());
             switch (world.compression()) {
@@ -58,8 +58,8 @@ public class PolarWriter {
         @NotNull PolarChunk chunk,
         int sectionCount
     ) {
-        buffer.write(VAR_INT, PolarWorld.zigZagEncode(chunk.x()));
-        buffer.write(VAR_INT, PolarWorld.zigZagEncode(chunk.z()));
+        buffer.write(VAR_INT, chunk.x());
+        buffer.write(VAR_INT, chunk.z());
 
         assert sectionCount == chunk.sections().length
             : "section count and chunk section length mismatch";

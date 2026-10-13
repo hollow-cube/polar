@@ -174,11 +174,8 @@ final class StreamingPolarLoader {
         int minSection,
         int maxSection
     ) {
-        final var rawChunkX = buffer.read(VAR_INT);
-        final var rawChunkZ = buffer.read(VAR_INT);
-        final boolean zigZag = version >= PolarWorld.VERSION_ZIGZAG_CHUNK_POS;
-        final int chunkX = zigZag ? PolarWorld.zigZagDecode(rawChunkX) : rawChunkX;
-        final int chunkZ = zigZag ? PolarWorld.zigZagDecode(rawChunkZ) : rawChunkZ;
+        final var chunkX = buffer.read(VAR_INT);
+        final var chunkZ = buffer.read(VAR_INT);
         final var chunk = instance.getChunkSupplier().createChunk(instance, chunkX, chunkZ);
         unsafeSetNeedsCompleteHeightmapRefresh(chunk, false);
         var chunkEntries = unsafeGetEntries(chunk);
